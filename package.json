@@ -4,13 +4,17 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest --silent false"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "esprima": "^4.0.1",
+    "util": "^0.12.4"
+  },
   "devDependencies": {
+    "@types/esprima": "^4.0.3",
     "@types/jest": "^27.4.1",
     "jest": "^27.5.1",
     "ts-jest": "^27.1.4",
