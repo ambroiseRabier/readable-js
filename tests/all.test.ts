@@ -1,5 +1,9 @@
 import {ReadableJS} from '../src';
 
+/*
+Note: If some test doesn't pass, put it inside another test case, so that you can read the console.log.
+ */
+
 function assertMessage(code: string, message: string): void {
   expect(
     ReadableJS.read(code)
@@ -19,4 +23,11 @@ it('variables declarations', function () {
 Create the variable <span class='readable-variable'>j</span> and set it to <span class='readable-value'>3</span>`);
   assertMessage("let o = 5", "Create the variable <span class='readable-variable'>o</span> and set it to <span class='readable-value'>5</span>")
   assertMessage("const p = 21", "Create the constant <span class='readable-variable'>p</span> and set it to <span class='readable-value'>21</span>")
+  assertMessage("var i", "Create the variable <span class='readable-variable'>i</span>");
+  assertMessage("var fn = function() { return true; }", "Create the variable <span class='readable-variable'>fn</span> and set it to <span class='readable-value'>this function</span>");
+
+});
+
+it('should work', function () {
+
 });

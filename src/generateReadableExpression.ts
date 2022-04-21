@@ -8,7 +8,8 @@ import {
   Identifier,
   MemberExpression, MetaProperty, PrivateIdentifier,
   Literal,
-  Pattern
+  Pattern,
+  FunctionExpression
 } from 'estree';
 import {is} from './enode-type-check';
 import {ExpressionWithProperty} from './estree-helper';
@@ -51,6 +52,7 @@ const converter: {
   Literal:  (e: Literal) => string;
   Identifier:  (e: Identifier) => string;
   VariableDeclarator:  (e: VariableDeclarator) => string;
+  FunctionExpression:  (e: FunctionExpression) => string;
 } = {
   "AssignmentExpression": (e: AssignmentExpression) => {
     const map = new Map([
@@ -126,6 +128,7 @@ const converter: {
       return generateReadableExpression(e.id)
     }
   },
+  "FunctionExpression":  (e: FunctionExpression) => 'this function'
 };
 
 
