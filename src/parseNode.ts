@@ -30,9 +30,15 @@ interface Message {
 const allNodeParser = {
   "VariableDeclaration": (node : VariableDeclaration): Message[] => {
     const messages = node.declarations.map(dec => {
+      const varToName = new Map([
+        ['let', 'variable'],
+        ['var', 'variable'],
+        ['const', 'constant'],
+      ]);
+
       let createMessage = '';
       if (isPattern.Identifier(dec.id)) {
-        createMessage = `Create the variable <span class='readable-variable'>${dec.id.name}</span>`;
+        createMessage = `Create the ${varToName.get(node.kind)} <span class='readable-variable'>${dec.id.name}</span>`;
       }
 
       let initMessage = '';
@@ -40,7 +46,7 @@ const allNodeParser = {
         initMessage = ` and set it to <span class='readable-value'>${generateReadableExpression(dec.init)}</span>`;
       }
 
-      let message = createMessage + initMessage;
+      let message =  createMessage + initMessage;
 
       return {
         lineNumber: node.loc?.start.line,
