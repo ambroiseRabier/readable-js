@@ -1,4 +1,5 @@
 import {ReadableJS} from '../src';
+import * as esprima from 'esprima';
 
 /*
 Note: If some test doesn't pass, put it inside another test case, so that you can read the console.log.
@@ -11,6 +12,73 @@ function assertMessage(code: string, message: string): void {
     message
   );
 }
+
+it('evaluate expression', function () {
+  expect(
+    ReadableJS.evaluateExpression('', '1 + 1')
+  ).toEqual(
+    2
+  );
+  expect(
+    ReadableJS.evaluateExpression('var bar = 2;', 'bar + 1')
+  ).toEqual(
+    3
+  );
+});
+
+it('evaluate var', function () {
+  expect(
+    ReadableJS.evaluateVar('var bar = 2; let foo = 3;', ['bar', 'foo'])
+  ).toEqual(new Map([
+    ['bar', 2],
+    ['foo', 3],
+  ]));
+});
+
+it('getEvaluatedMessageForIndex', function () {
+  const code = `var bar = 2;
+bar = 1 + bar`;
+  const r = esprima.parseScript(code, {
+    "range": true,
+    "loc": true
+  });
+
+  expect(
+    ReadableJS.getEvaluatedMessageForIndex(code, 1, r)
+  ).toEqual(
+    'set bar to 3'
+  );
+});
+
+it('getEvaluatedMessageForIndex multiple var declaration on same line', function () {
+  const code = `var bar = 2, foo = 2;
+bar = foo + bar`;
+  const r = esprima.parseScript(code, {
+    "range": true,
+    "loc": true
+  });
+
+  expect(
+    ReadableJS.getEvaluatedMessageForIndex(code, 1, r)
+  ).toEqual(
+    'set bar to 4'
+  );
+});
+
+it('getEvaluatedMessageForIndex multiple var declaration', function () {
+  const code = `var bar = 2; var foo = 2;
+bar = foo + bar`;
+  const r = esprima.parseScript(code, {
+    "range": true,
+    "loc": true
+  });
+
+  expect(
+    ReadableJS.getEvaluatedMessageForIndex(code, 2, r)
+  ).toEqual(
+    'set bar to 4'
+  );
+});
 
 it('should return nothing for nothing', function () {
   assertMessage('', '');
@@ -53,4 +121,47 @@ it('BinaryExpression', function () {
 
   assertMessage("foo = 1 | 2", "set foo to 1 bitwise-or 2");
   assertMessage("foo = 1 ^ 2", "set foo to 1 bitwise-and 2");
+});
+
+it('getPreviousCode', function () {
+  const code = `var c = 1; c = c + 1;`;
+  const r = esprima.parseScript(code, {
+    "range": true,
+    "loc": true
+  });
+
+  expect(
+    ReadableJS.getPreviousCode(code, 0, r)
+  ).toEqual(
+    ''
+  );
+
+  expect(
+    ReadableJS.getPreviousCode(code, 1, r)
+  ).toEqual(
+    'var c = 1; '
+  );
+
+  expect(
+    ReadableJS.getPreviousCode(code, 2, r)
+  ).toEqual(
+    'var c = 1; c = c + 1;'
+  );
+});
+
+it('getPreviousCode multiline', function () {
+  const code = `var bar = 2, foo = 3;
+bar = 1 + bar`;
+  const r = esprima.parseScript(code, {
+    "range": true,
+    "loc": true
+  });
+
+  // multiple variable declaration will count as one
+  expect(
+    ReadableJS.getPreviousCode(code, 1, r)
+  ).toEqual(
+    `var bar = 2, foo = 3;
+    `
+  );
 });

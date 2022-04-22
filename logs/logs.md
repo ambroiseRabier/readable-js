@@ -482,3 +482,8 @@ I modify markers put in the final string
 ```html
 set to <span class="variable-replacable">i</span>
 ```
+
+---
+
+Esprima actually give me AST, that is the KEyWORD !
+I want to evalute step by step AST.

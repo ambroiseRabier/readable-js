@@ -19,14 +19,19 @@ import {ExpressionWithProperty} from './estree-helper';
 function generateReadableValue(left?: Expression | Pattern, right?: Expression | Pattern) {
   // not sure when that is used
   if (right?.type === "FunctionExpression") {
+    console.warn('generateReadableValue unknown path');
     return "this function";
   }
 
   if (!!left && is.Identifier(left)) {
-    return left.name;
+    return (
+      `##replace-${left.name}##`
+    );
   }
 
-  generateReadableExpression(right);
+  console.warn('generateReadableValue unknown path');
+
+  return generateReadableExpression(right);
 }
 
 
@@ -45,6 +50,7 @@ function formatBinary(node, verbiage, negation?: boolean) {
 }
 
 
+
 const converter: {
   AssignmentExpression: (e: AssignmentExpression) => string;
   BinaryExpression: (e: BinaryExpression) => string;
@@ -59,7 +65,7 @@ const converter: {
   "AssignmentExpression": (e: AssignmentExpression) => {
     // note: he evaluate the expression on the right `foo = 1 + bar`, 1+bar is evaluated, I need to put a marker somewhere
     const map = new Map<AssignmentOperator, (e: AssignmentExpression) => string>([
-      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${ge(e['right'])}`],
+      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['+=', (e: AssignmentExpression) => `add ${ge(e['right'])} to ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['-=', (e: AssignmentExpression) => `subtract ${ge(e['right'])} from ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['*=', (e: AssignmentExpression) => `multiply ${ge(e['left'])} by ${ge(e['right'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
