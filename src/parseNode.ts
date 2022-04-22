@@ -28,7 +28,7 @@ export interface Message {
 }
 
 const allNodeParser = {
-  "VariableDeclaration": (node : VariableDeclaration): Message[] => {
+  "VariableDeclaration": (node : VariableDeclaration, options?: ParseNodeOptions): Message[] => {
     const messages = node.declarations.map(dec => {
       const varToName = new Map([
         ['let', 'variable'],
@@ -43,7 +43,7 @@ const allNodeParser = {
 
       let initMessage = '';
       if (!!dec.init) {
-        initMessage = ` and set it to <span class='readable-value'>${generateReadableExpression(dec.init)}</span>`;
+        initMessage = ` and set it to <span class='readable-value'>${generateReadableExpression(dec.init, options)}</span>`;
       }
 
       let message =  createMessage + initMessage;
@@ -57,25 +57,37 @@ const allNodeParser = {
 
     return messages;
   },
-  "IfStatement": (node : IfStatement) => {
-
+  "IfStatement": (node : IfStatement, options?: ParseNodeOptions) => {
+    return [{
+      lineNumber: node.loc?.start.line,
+      message: `##if-${node.test.range![0]}-${node.test.range![1]}##${generateReadableExpression(node.test)}`, // Because if true, Skip because if false, and generateReadableExpression
+    }];
   },
-  "WhileStatement": (node : WhileStatement) => {
-
+  "WhileStatement": (node : WhileStatement, options?: ParseNodeOptions) => {
+    return [{
+      lineNumber: node.loc?.start.line,
+      message: 'todo',
+    }];
   },
-  "ExpressionStatement": (node : ExpressionStatement) => {
+  "ExpressionStatement": (node : ExpressionStatement, options?: ParseNodeOptions) => {
     return [
       {
         lineNumber: node.loc?.start.line,
-        message: generateReadableExpression(node.expression)
+        message: generateReadableExpression(node.expression, options)
       }
     ];
   },
-  "ReturnStatement": (node : ReturnStatement) => {
-
+  "ReturnStatement": (node : ReturnStatement, options?: ParseNodeOptions) => {
+    return [{
+      lineNumber: node.loc?.start.line,
+      message: 'todo',
+    }];
   },
-  "CallExpression": (node : CallExpression) => {
-
+  "CallExpression": (node : CallExpression, options?: ParseNodeOptions) => {
+    return [{
+      lineNumber: node.loc?.start.line,
+      message: 'todo',
+    }];
   },
 };
 
@@ -85,11 +97,14 @@ function isKey(s: string): s is allNodeParserKeys {
   return allNodeParser.hasOwnProperty(s)
 }
 
+export interface ParseNodeOptions {
+  replaceVar?: boolean;
+}
 
 // equivalent to readableNode
 // This would be nice to make it public, parsing only the current node
 // would be more performant.
-export function parseNode(node: ENode): Message[] {
+export function parseNode(node: ENode, options?: ParseNodeOptions): Message[] {
   // equivalent to pp
   someLog(node);
 
@@ -98,7 +113,13 @@ export function parseNode(node: ENode): Message[] {
   }
 
   const parser = allNodeParser[node.type];
-  const messages: Message[] = parser(node as any) as any;
+
+  if (!parser) {
+    console.warn(`unknown ${node.type}`)
+    return [];
+  }
+
+  const messages: Message[] = parser(node as any, options);
 
   return messages;
 }

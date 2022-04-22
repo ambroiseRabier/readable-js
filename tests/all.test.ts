@@ -13,27 +13,7 @@ function assertMessage(code: string, message: string): void {
   );
 }
 
-it('evaluate expression', function () {
-  expect(
-    ReadableJS.evaluateExpression('', '1 + 1')
-  ).toEqual(
-    2
-  );
-  expect(
-    ReadableJS.evaluateExpression('var bar = 2;', 'bar + 1')
-  ).toEqual(
-    3
-  );
-});
 
-it('evaluate var', function () {
-  expect(
-    ReadableJS.evaluateVar('var bar = 2; let foo = 3;', ['bar', 'foo'])
-  ).toEqual(new Map([
-    ['bar', 2],
-    ['foo', 3],
-  ]));
-});
 
 it('getEvaluatedMessageForIndex', function () {
   const code = `var bar = 2;
@@ -80,6 +60,9 @@ bar = foo + bar`;
   );
 });
 
+
+
+
 it('should return nothing for nothing', function () {
   assertMessage('', '');
 });
@@ -123,45 +106,28 @@ it('BinaryExpression', function () {
   assertMessage("foo = 1 ^ 2", "set foo to 1 bitwise-and 2");
 });
 
-it('getPreviousCode', function () {
-  const code = `var c = 1; c = c + 1;`;
+it('if condition', function () {
+  const code = `if( 1 != 2 ) {\n   console.log(x, y);\n }`;
   const r = esprima.parseScript(code, {
     "range": true,
     "loc": true
   });
 
   expect(
-    ReadableJS.getPreviousCode(code, 0, r)
+    ReadableJS.getEvaluatedMessageForIndex(code, 0, r)
   ).toEqual(
-    ''
-  );
-
-  expect(
-    ReadableJS.getPreviousCode(code, 1, r)
-  ).toEqual(
-    'var c = 1; '
-  );
-
-  expect(
-    ReadableJS.getPreviousCode(code, 2, r)
-  ).toEqual(
-    'var c = 1; c = c + 1;'
+    'Because 1 different 2'
   );
 });
 
-it('getPreviousCode multiline', function () {
-  const code = `var bar = 2, foo = 3;
-bar = 1 + bar`;
-  const r = esprima.parseScript(code, {
-    "range": true,
-    "loc": true
-  });
-
-  // multiple variable declaration will count as one
-  expect(
-    ReadableJS.getPreviousCode(code, 1, r)
-  ).toEqual(
-    `var bar = 2, foo = 3;
-    `
-  );
+it('if condition no replace', function () {
+  assertMessage("if( 1 != 2 ) {\n   console.log(x, y);\n }", "Test 1 different 2");
 });
+
+// it('should ', function () {
+//   assertMessage("if( (x*x) + (y*y) <= (radius*radius) ) {\n   console.log(x, y);\n }", "Because 1 times 1 plus 4 times 4 is less than or equal to 5 times 5",)
+//   // {
+//   //   "before": "var radius=5, x=1, y=4;"
+//   // }
+// });
+

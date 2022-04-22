@@ -487,3 +487,7 @@ set to <span class="variable-replacable">i</span>
 
 Esprima actually give me AST, that is the KEyWORD !
 I want to evalute step by step AST.
+
+MAYBE I CAN AVOID PROPS DRILING
+options, by making a class
+and using new.

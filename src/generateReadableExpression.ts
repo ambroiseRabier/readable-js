@@ -13,23 +13,22 @@ import {
 } from 'estree';
 import {is} from './enode-type-check';
 import {ExpressionWithProperty} from './estree-helper';
+import {ParseNodeOptions} from './parseNode';
 
 // not suer this work, maybe it can be refactored
 // need to evaluate value at some point..
-function generateReadableValue(left?: Expression | Pattern, right?: Expression | Pattern) {
+function generateReadableValue(left?: Expression | Pattern, right?: Expression | Pattern, options?: ParseNodeOptions) {
   // not sure when that is used
   if (right?.type === "FunctionExpression") {
     console.warn('generateReadableValue unknown path');
     return "this function";
   }
 
-  if (!!left && is.Identifier(left)) {
+  if (!!left && is.Identifier(left) && options?.replaceVar) {
     return (
       `##replace-${left.name}##`
     );
   }
-
-  console.warn('generateReadableValue unknown path');
 
   return generateReadableExpression(right);
 }
@@ -52,20 +51,20 @@ function formatBinary(node, verbiage, negation?: boolean) {
 
 
 const converter: {
-  AssignmentExpression: (e: AssignmentExpression) => string;
-  BinaryExpression: (e: BinaryExpression) => string;
-  ObjectExpression: (e: ObjectExpression) => string;
-  CallExpression:  (e: CallExpression) => string;
-  MemberExpression:  (e: MemberExpression) => string;
-  Literal:  (e: Literal) => string;
-  Identifier:  (e: Identifier) => string;
-  VariableDeclarator:  (e: VariableDeclarator) => string;
-  FunctionExpression:  (e: FunctionExpression) => string;
+  AssignmentExpression: (e: AssignmentExpression, options?: ParseNodeOptions) => string;
+  BinaryExpression: (e: BinaryExpression, options?: ParseNodeOptions) => string;
+  ObjectExpression: (e: ObjectExpression, options?: ParseNodeOptions) => string;
+  CallExpression:  (e: CallExpression, options?: ParseNodeOptions) => string;
+  MemberExpression:  (e: MemberExpression, options?: ParseNodeOptions) => string;
+  Literal:  (e: Literal, options?: ParseNodeOptions) => string;
+  Identifier:  (e: Identifier, options?: ParseNodeOptions) => string;
+  VariableDeclarator:  (e: VariableDeclarator, options?: ParseNodeOptions) => string;
+  FunctionExpression:  (e: FunctionExpression, options?: ParseNodeOptions) => string;
 } = {
-  "AssignmentExpression": (e: AssignmentExpression) => {
+  "AssignmentExpression": (e: AssignmentExpression, options) => {
     // note: he evaluate the expression on the right `foo = 1 + bar`, 1+bar is evaluated, I need to put a marker somewhere
     const map = new Map<AssignmentOperator, (e: AssignmentExpression) => string>([
-      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
+      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'], options)}`],
       ['+=', (e: AssignmentExpression) => `add ${ge(e['right'])} to ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['-=', (e: AssignmentExpression) => `subtract ${ge(e['right'])} from ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['*=', (e: AssignmentExpression) => `multiply ${ge(e['left'])} by ${ge(e['right'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
@@ -155,13 +154,13 @@ const converter: {
 };
 
 
-export function generateReadableExpression(exp?: Expression | PrivateIdentifier | Pattern): string {
+export function generateReadableExpression(exp?: Expression | PrivateIdentifier | Pattern, options?: ParseNodeOptions): string {
   if (!exp) {
     return '';
   }
 
   if ((converter as any).hasOwnProperty(exp.type)) {
-    return converter[exp.type](exp);
+    return converter[exp.type](exp, options);
   } else {
     console.warn(`Not found converter for: ${exp.type}`)
     return '';
