@@ -363,3 +363,122 @@ if (isEqual(type, 'VariableDeclarator')) {
   list('');
 }
 ```
+
+No idea. How he give the information
+about a variable and make the addition.
+
+```
+var bar = 2, foo = 0;
+foo = 1 + bar // set foo to 3
+```
+how does he do that.
+
+This is what esprima does.
+```
+{
+  "type": "Program",
+  "body": [
+    {
+      "type": "VariableDeclaration",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "bar"
+          },
+          "init": {
+            "type": "Literal",
+            "value": 2,
+            "raw": "2"
+          }
+        },
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "foo"
+          },
+          "init": {
+            "type": "Literal",
+            "value": 0,
+            "raw": "0"
+          }
+        }
+      ],
+      "kind": "var"
+    },
+    {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "AssignmentExpression",
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "name": "foo"
+        },
+        "right": {
+          "type": "BinaryExpression",
+          "operator": "+",
+          "left": {
+            "type": "Literal",
+            "value": 1,
+            "raw": "1"
+          },
+          "right": {
+            "type": "Identifier",
+            "name": "bar"
+          }
+        }
+      }
+    }
+  ],
+  "sourceType": "script"
+}
+```
+
+Maybe he use... the current variable
+on global ?
+When using Math.random()
+it change each time I move the slider
+and display the random value.
+
+so it is evaluated I think.
+
+yep
+
+```js
+var r = Math.random();
+var d = r;
+```
+change each time the slider move
+
+Maybe, I can evaluate too ?
+need to evaluate the code "before" like he said.
+but... how does he manage not to evaluate
+stuff that require a lib ?
+or does he not care maybe.
+maybe he don't care that something 
+is drawn on canvas.
+
+let's read about eval a bit
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval
+
+eval could be used, but
+Function() recommended by MDN seem viable.
+
+```js
+Function('var k = {o:{p:34}}; return k')()
+```
+I just need to append the return of the variable I need.
+It could be an object (k.o.p). But that should be doable.
+However, still no idea about libs
+
+run the code, give it dependency (that is what they do with `pad`).
+before running it, you need return some information
+about the var you need.
+this can be separated step where
+I modify markers put in the final string
+```html
+set to <span class="variable-replacable">i</span>
+```

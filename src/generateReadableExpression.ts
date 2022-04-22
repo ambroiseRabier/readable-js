@@ -9,19 +9,21 @@ import {
   MemberExpression, MetaProperty, PrivateIdentifier,
   Literal,
   Pattern,
-  FunctionExpression
+  FunctionExpression, AssignmentOperator, BinaryOperator
 } from 'estree';
 import {is} from './enode-type-check';
 import {ExpressionWithProperty} from './estree-helper';
 
 // not suer this work, maybe it can be refactored
+// need to evaluate value at some point..
 function generateReadableValue(left?: Expression | Pattern, right?: Expression | Pattern) {
+  // not sure when that is used
   if (right?.type === "FunctionExpression") {
     return "this function";
   }
 
-  if (is.Identifier(left?.type)) {
-    return left!.type.name;
+  if (!!left && is.Identifier(left)) {
+    return left.name;
   }
 
   generateReadableExpression(right);
@@ -55,37 +57,52 @@ const converter: {
   FunctionExpression:  (e: FunctionExpression) => string;
 } = {
   "AssignmentExpression": (e: AssignmentExpression) => {
-    const map = new Map([
-      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
+    // note: he evaluate the expression on the right `foo = 1 + bar`, 1+bar is evaluated, I need to put a marker somewhere
+    const map = new Map<AssignmentOperator, (e: AssignmentExpression) => string>([
+      ['=', (e: AssignmentExpression) => `set ${ge(e['left'])} to ${ge(e['right'])}`],
       ['+=', (e: AssignmentExpression) => `add ${ge(e['right'])} to ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['-=', (e: AssignmentExpression) => `subtract ${ge(e['right'])} from ${ge(e['left'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['*=', (e: AssignmentExpression) => `multiply ${ge(e['left'])} by ${ge(e['right'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
       ['/=', (e: AssignmentExpression) => `divide ${ge(e['left'])} to ${ge(e['right'])} and set ${ge(e['left'])} to ${generateReadableValue(e['left'], e['right'])}`],
-      ['/=', (e: AssignmentExpression) => `divide ${ge(e['left'])} to ${ge(e['right'])} and set ${ge(e['left'])} to the remainder:  ${generateReadableValue(e['left'], e['right'])}`],
+      ['%=', (e: AssignmentExpression) => `divide ${ge(e['left'])} to ${ge(e['right'])} and set ${ge(e['left'])} to the remainder:  ${generateReadableValue(e['left'], e['right'])}`],
+      ['**=', (e: AssignmentExpression) => ``],
+      ['<<=', (e: AssignmentExpression) => ``],
+      ['>>=', (e: AssignmentExpression) => ``],
+      ['>>>=', (e: AssignmentExpression) => ``],
+      ['|=', (e: AssignmentExpression) => ``],
+      ['^=', (e: AssignmentExpression) => ``],
+      ['&=', (e: AssignmentExpression) => ``],
     ]);
 
-    return map[e.operator];
+    return map.get(e.operator)!(e);
   },
   "BinaryExpression": (e: BinaryExpression) => {
-    const map = new Map([
+    const map = new Map<BinaryOperator, (e: BinaryExpression) => string>([
+      ['==', (e: BinaryExpression) => formatBinary(e, " equal to ")],
+      ['!=', (e: BinaryExpression) => formatBinary(e, " different ")],
+      ['===', (e: BinaryExpression) => formatBinary(e, " strict equal to ")],
+      ['!==', (e: BinaryExpression) => formatBinary(e, " strict different ")],
+      ['<', (e: BinaryExpression) => formatBinary(e, " less than ")],
+      ['<=', (e: BinaryExpression) => formatBinary(e, " less than or equal to ")],
+      ['>', (e: BinaryExpression) => formatBinary(e, " greater than ")],
+      ['>=', (e: BinaryExpression) => formatBinary(e, " greater than or equal to ")],
+      ['<<', (e: BinaryExpression) => ''],
+      ['>>', (e: BinaryExpression) => ''],
+      ['>>>', (e: BinaryExpression) => ''],
       ['+', (e: BinaryExpression) => formatBinary(e, " plus ")],
       ['-', (e: BinaryExpression) => formatBinary(e, " minus ")],
       ['*', (e: BinaryExpression) => formatBinary(e, " times ")],
       ['/', (e: BinaryExpression) => formatBinary(e, " divided by ")],
       ['%', (e: BinaryExpression) => formatBinary(e, " modulo ")],
+      ['**', (e: BinaryExpression) => ''],
       ['|', (e: BinaryExpression) => formatBinary(e, " bitwise-or ")],
-      ['^', (e: BinaryExpression) => formatBinary(e, "bitwise-and")],
-      ['<=', (e: BinaryExpression) => formatBinary(e, " less than or equal to ")],
-      ['<', (e: BinaryExpression) => formatBinary(e, " less than ")],
-      ['>=', (e: BinaryExpression) => formatBinary(e, " greater than or equal to ")],
-      ['>', (e: BinaryExpression) => formatBinary(e, " greater than ")],
-      ['==', (e: BinaryExpression) => formatBinary(e, "equal to")],
-      ['===', (e: BinaryExpression) => formatBinary(e, "equal to")],
-      ['!=', (e: BinaryExpression) => formatBinary(e, "different")],
-      ['!==', (e: BinaryExpression) => formatBinary(e, "different")],
+      ['^', (e: BinaryExpression) => formatBinary(e, " bitwise-and ")],
+      ['&', (e: BinaryExpression) => ''],
+      ['in', (e: BinaryExpression) => ''],
+      ['instanceof', (e: BinaryExpression) => ''],
     ]);
 
-    return map[e.operator];
+    return map.get(e.operator)!(e);
   },
   "ObjectExpression": (e: ObjectExpression) => "an object",
   "CallExpression": (e: CallExpression) => {

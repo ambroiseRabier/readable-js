@@ -22,7 +22,7 @@ function someLog(node: Directive | Statement | ModuleDeclaration) {
   console.log(a);
 }
 
-interface Message {
+export interface Message {
   lineNumber?: number;
   message: string;
 }
@@ -64,7 +64,12 @@ const allNodeParser = {
 
   },
   "ExpressionStatement": (node : ExpressionStatement) => {
-
+    return [
+      {
+        lineNumber: node.loc?.start.line,
+        message: generateReadableExpression(node.expression)
+      }
+    ];
   },
   "ReturnStatement": (node : ReturnStatement) => {
 

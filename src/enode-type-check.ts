@@ -9,7 +9,8 @@ import {
   Pattern,
   MemberExpression,
   Super,
-  FunctionExpression
+  FunctionExpression,
+  Literal
 } from 'estree';
 import {ENode, ExpressionWithProperty} from './estree-helper';
 
@@ -35,6 +36,9 @@ export const is = {
   },
   "Identifier": (a: any): a is Identifier => {
     return a.type === "Identifier";
+  },
+  "Literal": (a: any): a is Literal => {
+    return a.type === "Literal";
   },
   "MemberExpression": (a: any): a is MemberExpression => {
     return a.type === "MemberExpression";

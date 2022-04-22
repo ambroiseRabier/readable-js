@@ -25,9 +25,32 @@ Create the variable <span class='readable-variable'>j</span> and set it to <span
   assertMessage("const p = 21", "Create the constant <span class='readable-variable'>p</span> and set it to <span class='readable-value'>21</span>")
   assertMessage("var i", "Create the variable <span class='readable-variable'>i</span>");
   assertMessage("var fn = function() { return true; }", "Create the variable <span class='readable-variable'>fn</span> and set it to <span class='readable-value'>this function</span>");
-
 });
 
-it('should work', function () {
+it('ExpressionStatement', function () {
+  //assertMessage("foo = 1 + bar", "set foo to 3");
+  assertMessage("foo = 1 + bar", "set foo to 1 plus bar");
+// , {
+//     "before": "var bar = 2, foo = 0;"
+//   }
+});
 
+it('BinaryExpression', function () {
+  assertMessage("foo = 1 == 2", "set foo to 1 equal to 2");
+  assertMessage("foo = 1 != 2", "set foo to 1 different 2");
+  assertMessage("foo = 1 === 2", "set foo to 1 strict equal to 2");
+  assertMessage("foo = 1 !== 2", "set foo to 1 strict different 2");
+  assertMessage("foo = 1 < 2", "set foo to 1 less than 2");
+  assertMessage("foo = 1 <= 2", "set foo to 1 less than or equal to 2");
+  assertMessage("foo = 1 > 2", "set foo to 1 greater than 2");
+  assertMessage("foo = 1 >= 2", "set foo to 1 greater than or equal to 2");
+
+  assertMessage("foo = 1 + 2", "set foo to 1 plus 2");
+  assertMessage("foo = 1 - 2", "set foo to 1 minus 2");
+  assertMessage("foo = 1 * 2", "set foo to 1 times 2");
+  assertMessage("foo = 1 / 2", "set foo to 1 divided by 2");
+  assertMessage("foo = 1 % 2", "set foo to 1 modulo 2");
+
+  assertMessage("foo = 1 | 2", "set foo to 1 bitwise-or 2");
+  assertMessage("foo = 1 ^ 2", "set foo to 1 bitwise-and 2");
 });
