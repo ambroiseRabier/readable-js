@@ -129,6 +129,10 @@ it('CallExpression', function () {
   assertMessage("go()", "Call the function go");
 });
 
+it('FunctionDeclaration', function () {
+  assertMessage("function go () {}", "Declare the function go");
+});
+
 
 
 // it('should ', function () {

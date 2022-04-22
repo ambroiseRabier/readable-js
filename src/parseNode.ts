@@ -6,7 +6,8 @@ import {
   ModuleDeclaration, ReturnStatement,
   Statement,
   VariableDeclaration,
-  WhileStatement
+  WhileStatement,
+  FunctionDeclaration
 } from 'estree';
 import util from 'util';
 import {ENode} from './estree-helper';
@@ -87,6 +88,12 @@ const allNodeParser = {
     return [{
       lineNumber: node.loc?.start.line,
       message: generateReadableExpression(node),
+    }];
+  },
+  "FunctionDeclaration": (node : FunctionDeclaration, options?: ParseNodeOptions) => {
+    return [{
+      lineNumber: node.loc?.start.line,
+      message: `Declare the function ${node.id?.name}`,
     }];
   },
 };
