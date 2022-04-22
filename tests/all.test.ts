@@ -81,6 +81,7 @@ Create the variable <span class='readable-variable'>j</span> and set it to <span
 it('ExpressionStatement', function () {
   //assertMessage("foo = 1 + bar", "set foo to 3");
   assertMessage("foo = 1 + bar", "set foo to 1 plus bar");
+  assertMessage("1 + bar", "1 plus bar");
 // , {
 //     "before": "var bar = 2, foo = 0;"
 //   }
@@ -123,6 +124,12 @@ it('if condition', function () {
 it('if condition no replace', function () {
   assertMessage("if( 1 != 2 ) {\n   console.log(x, y);\n }", "Test 1 different 2");
 });
+
+it('CallExpression', function () {
+  assertMessage("go()", "Call the function go");
+});
+
+
 
 // it('should ', function () {
 //   assertMessage("if( (x*x) + (y*y) <= (radius*radius) ) {\n   console.log(x, y);\n }", "Because 1 times 1 plus 4 times 4 is less than or equal to 5 times 5",)

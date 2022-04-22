@@ -116,7 +116,7 @@ const converter: {
     }
 
     if (is.Identifier(e.callee)) {
-      return generateReadableExpression(e.callee);
+      return `Call the function ${generateReadableExpression(e.callee)}`;
       // ignored compile thing, probably something missing with else
     } else if (is.MemberExpression(e.callee)) {
       if (is.Super(e.callee.object)) {

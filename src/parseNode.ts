@@ -86,7 +86,7 @@ const allNodeParser = {
   "CallExpression": (node : CallExpression, options?: ParseNodeOptions) => {
     return [{
       lineNumber: node.loc?.start.line,
-      message: 'todo',
+      message: generateReadableExpression(node),
     }];
   },
 };
