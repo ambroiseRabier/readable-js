@@ -1,0 +1,66 @@
+import {runCodeWithSpy} from './generate-call-stack';
+
+it('give calls', function () {
+  const r = runCodeWithSpy(`
+    var i = 0;
+    i++;
+  `);
+
+  expect(r).toEqual({
+    "calls": [
+      [
+        {
+          "loc": {
+            "end": {
+              "column": 14,
+              "line": 2
+            },
+            "start": {
+              "column": 4,
+              "line": 2
+            }
+          },
+          "range": [
+            5,
+            15
+          ]
+        }
+      ],
+      [
+        {
+          "loc": {
+            "end": {
+              "column": 8,
+              "line": 3
+            },
+            "start": {
+              "column": 4,
+              "line": 3
+            }
+          },
+          "range": [
+            20,
+            24
+          ]
+        }
+      ]
+    ]
+  });
+});
+
+/**
+ * try {
+ *    Function('con!sole.log(a)')()
+ * } catch (e) {console.log(e); }
+ *
+ * work. but mine doesn't work ? An issue with jest only maybe ?
+ */
+// it('give errors', function () {
+//   const r = runCodeWithSpy(`
+//     var !i = 0
+//     i++;
+//   `);
+//
+//   expect(r).toEqual({
+//     "calls": 2  });
+// })
