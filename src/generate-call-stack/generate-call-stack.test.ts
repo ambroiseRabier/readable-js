@@ -8,42 +8,38 @@ it('give calls', function () {
 
   expect(r).toEqual({
     "calls": [
-      [
-        {
-          "loc": {
-            "end": {
-              "column": 14,
-              "line": 2
-            },
-            "start": {
-              "column": 4,
-              "line": 2
-            }
+      {
+        "loc": {
+          "end": {
+            "column": 14,
+            "line": 2
           },
-          "range": [
-            5,
-            15
-          ]
-        }
-      ],
-      [
-        {
-          "loc": {
-            "end": {
-              "column": 8,
-              "line": 3
-            },
-            "start": {
-              "column": 4,
-              "line": 3
-            }
+          "start": {
+            "column": 4,
+            "line": 2
+          }
+        },
+        "range": [
+          5,
+          15
+        ]
+      },
+      {
+        "loc": {
+          "end": {
+            "column": 8,
+            "line": 3
           },
-          "range": [
-            20,
-            24
-          ]
-        }
-      ]
+          "start": {
+            "column": 4,
+            "line": 3
+          }
+        },
+        "range": [
+          20,
+          24
+        ]
+      }
     ]
   });
 });
@@ -90,44 +86,28 @@ function assertCode(code, expectation) {
   );
 }
 
-it(('inline if'), function () {
-  assertCode(`
+describe('if', () => {
+  it('true condition', function () {
+    assertCode(`
     var i = 0;
     if (true) { i--; }
   `, [
-    "var i = 0;",
-    "if (true) { i--; }",
-  ]);
-  assertCode(`
+      "var i = 0;",
+      "if (true) { i--; }",
+      "i--;",
+    ]);
+
+  });
+
+  it('false condition', function () {
+    assertCode(`
     var i = 0;
     if (false) { i--; }
   `, [
-    "var i = 0;",
-    "if (false) { i--; }",
-  ]);
+      "var i = 0;",
+      "if (false) { i--; }",
+    ]);
+  });
 });
 
-it(('if'), function () {
-  assertCode(`
-    var i = 0;
-    if (true) { 
-      i--;
-    }`,
-    [
-    "var i = 0;",
-    `if (true) { 
-      i--;
-    }`
-  ]);
-  assertCode(`
-    var i = 0;
-    if (false) { 
-      i--;
-    }`,
-    [
-    "var i = 0;",
-    `if (false) { 
-      i--;
-    }`,
-  ]);
-});
+

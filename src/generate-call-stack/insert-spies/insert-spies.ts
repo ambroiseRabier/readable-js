@@ -1,9 +1,6 @@
 import * as esprima from 'esprima';
-import {
-  Directive, IfStatement, ModuleDeclaration, Statement,
-  ExpressionStatement, SourceLocation
-} from 'estree';
 import {Program} from 'esprima';
+import {ExpressionStatement, IfStatement, SourceLocation} from 'estree';
 import {is} from '../../enode-type-check';
 
 // esprima.body[0] for example
@@ -24,7 +21,7 @@ function insertSpyCodeBefore(
   spyFcName: string,
   spyParamHook?: (e: EsprimaNode) => string
 ): { insertedCodeLength: number; newCode: string; } {
-  const [start, end] = eNode.range.map(e => e + offset);
+  const [start, end] = eNode.range;
 
   const spyFirstParam = spyParamHook ? spyParamHook(eNode) : `{
   range: [${start}, ${end}],
@@ -49,7 +46,7 @@ function insertSpyCodeBefore(
   // insert spy string in between (this won't work as easy when adding scope, if, loop, function, etc
   return {
     insertedCodeLength: spyString.length,
-    newCode: newCode.substring(0, start) + spyString + newCode.substring(start, newCode.length),
+    newCode: newCode.substring(0, start+ offset) + spyString + newCode.substring(start+ offset, newCode.length),
   };
 }
 

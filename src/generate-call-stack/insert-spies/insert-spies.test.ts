@@ -6,7 +6,7 @@ import {insertSpies} from './insert-spies';
 //   });
 // });
 
-it('should insert spy', function () {
+it('should insert spy with correct params', function () {
   const r = insertSpies(`var i = 0;`, 'spy');
   const e =
 `
@@ -28,12 +28,39 @@ var i = 0;`
   expect(r).toEqual(e);
 });
 
-it('should insert multiples spy', function () {
-  const r = insertSpies(`var i = 0; var j = 1;`, 'spy');
+it('should insert custom spy', function () {
+  const r = insertSpies(`var j = 1;`, 'spy', e => e.range![1] + '');
   const e =
 `
+;spy(10);
+var j = 1;`
+
+  expect(r).toEqual(e);
+});
+
+it('insert multiple spy', function () {
+  const r = insertSpies(`var i = 0; var j = 0;`, 'spy', node => '');
+
+  const e =
+`
+;spy();
+var i = 0; 
+;spy();
+var j = 0;`
+
+  expect(r).toEqual(e);
+})
+
+
+describe('condition', () => {
+
+
+  it('should insert spy with correct params for condition', function () {
+    const r = insertSpies(`if (true) { 1+1 }`, 'spy');
+    const e =
+`
 ;spy({
-  range: [0, 10],
+  range: [0, 17],
   loc: {
     "start": {
       "line": 1,
@@ -41,39 +68,40 @@ it('should insert multiples spy', function () {
     },
     "end": {
       "line": 1,
-      "column": 10
+      "column": 17
     }
   }
 });
-var i = 0; 
+if (true) { 
 ;spy({
-  range: [11, 21],
+  range: [12, 16],
   loc: {
     "start": {
       "line": 1,
-      "column": 11
+      "column": 12
     },
     "end": {
       "line": 1,
-      "column": 21
+      "column": 16
     }
   }
 });
-var j = 1;`
+1+1 }`
 
-  expect(r).toEqual(e);
-});
+    expect(r).toEqual(e);
+  });
 
-it('if', function () {
-  const r = insertSpies(`
+
+  it('if', function () {
+    const r = insertSpies(`
 let i = 0;
 if (true) {
   i++;
 }  
 `, 'spy', node => '');
 
-  const e =
-`
+    const e =
+      `
 
 ;spy();
 let i = 0;
@@ -86,11 +114,12 @@ i++;
 }  
 `
 
-  expect(r).toEqual(e);
-});
+    expect(r).toEqual(e);
+  });
 
-it('if...else', function () {
-  const r = insertSpies(`
+
+  it('if...else', function () {
+    const r = insertSpies(`
 let i = 0;
 if (true) {
   i++;
@@ -99,8 +128,8 @@ if (true) {
 }
 `, 'spy', node => '');
 
-  const e =
-`
+    const e =
+      `
 
 ;spy();
 let i = 0;
@@ -117,11 +146,12 @@ i--;
 }
 `
 
-  expect(r).toEqual(e);
-});
+    expect(r).toEqual(e);
+  });
 
-it('if nested', function () {
-  const r = insertSpies(`
+
+  it('if nested', function () {
+    const r = insertSpies(`
 let i = 0;
 if (true) {
   if (true) {
@@ -130,8 +160,8 @@ if (true) {
 }
 `, 'spy', node => '');
 
-  const e =
-`
+    const e =
+      `
 
 ;spy();
 let i = 0;
@@ -148,5 +178,8 @@ i++;
 }
 `
 
-  expect(r).toEqual(e);
+    expect(r).toEqual(e);
+  });
+
+
 });
