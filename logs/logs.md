@@ -491,3 +491,121 @@ I want to evalute step by step AST.
 MAYBE I CAN AVOID PROPS DRILING
 options, by making a class
 and using new.
+
+ast explorer using
+concurrent acorn: https://astexplorer.net/
+
+I am having issue with `while` loop,
+we all agree that I am making the text for
+only one line.
+But if I evaluate the code right before the while loop,
+the `var i = 0` will always be `0`.
+
+---
+
+I look the deps, I have seen something intersting:
+https://github.com/estools/escodegen
+
+He say use escogen
+https://github.com/jquery/esprima/issues/2072
+
+babel generator could also work it seems
+https://stackoverflow.com/questions/49629651/how-can-i-transform-a-custom-ast-into-js-code
+
+but it might be a big file for the browser.
+On react docusaurus, they talked about typescript editable
+code snippet, and he said no, they wont' do it because too  much
+stuff to download for user.
+
+OHH, I missed some .coffee file.
+why did he put them into a coffee folder instead of src...
+
+`generateCallTrace` seem interesting in choc.coffee
+
+wisp and coffee is kinda unreadable...
+
+This suck, I have no idea how the timeline is generated.
+
+```
+var i = 0;
+[1,2,3].foreach(() => {
+ i++;
+})
+```
+this doesn't work, ha.
+
+I mean, he need to stop and draw,
+
+(btw: playing with http://jsfiddle.net/eigenjoy/smdbd/)
+
+So he call draw in code.
+
+I guess, I have to go on on myself now. mostly.
+
+---
+
+Rewrite code as a big yield ?
+
+```
+function* generator() {
+yield 1;
+yield 2;
+yield 3;
+}
+```
+I put a yield with the info I need
+and also know when code is finished.
+
+Not sure if that can work to get strack trace
+https://stackoverflow.com/questions/41586293/how-can-i-get-a-js-stack-trace-without-halting-the-script
+
+```js
+const stackTrace = new Error().stack
+```
+
+---
+
+CONTRAINTES:
+- Pas de visuel, pas de generation visuel.
+
+1. Quel est le call trace. (dans quel ordre chaque element est appelé)
+  - On peut générer le slider avec, nb de instructions + position ligne
+    + surligner.
+2. À chaque call, une explication, sur une ou plusieurs lignes.
+3. Pas de evaluation directe dans un premier temps (oublie pr l'instant)
+
+Si call trace, je répète instructions dans un boucle.
+Est-ce que decrire le code hors fonctionnement est intéressant ?
+non je pense pas. Cela revient à coder tt court
+
+```js
+Function(`const stackTrace = new Error().stack`)()
+Function(`function sd() {const stackTrace = new Error().stack} return sd`)()
+```
+doesnt give anything useful.
+
+---
+
+```js
+function d() {
+ var p = 3 + a
+}
+d()
+var a = 4;
+```
+this work. amazing.
+maybe he is adding some hiddne code ??
+
+like
+
+```js
+function d() {
+  hiddenEvaluator(a);
+ var p = 3 + a
+}
+d()
+var a = 4;
+```
+
+I can put marker like that everywhere ?
+This also give me the callstack

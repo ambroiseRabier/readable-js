@@ -49,7 +49,7 @@ export class ReadableJS {
         const range = [parseInt(m[1]), parseInt(m[2])]
         const expression = previousCodeIncluded.substring(parseInt(m[1]), parseInt(m[2]));
         const evaluateTo = executeEvaluateExpression(previousCode, expression);
-        parsedNode[0].message = parsedNode[0].message.replace(`##if-${range[0]}-${range[1]}##`, evaluateTo ? 'Because ' : 'Skip because ');
+        parsedNode[0].message = parsedNode[0].message.replace(`##if-${range[0]}-${range[1]}##`, evaluateTo ? 'Because' : 'Skip because');
       }
     }
 

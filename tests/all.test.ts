@@ -135,10 +135,3 @@ it('FunctionDeclaration', function () {
 
 
 
-// it('should ', function () {
-//   assertMessage("if( (x*x) + (y*y) <= (radius*radius) ) {\n   console.log(x, y);\n }", "Because 1 times 1 plus 4 times 4 is less than or equal to 5 times 5",)
-//   // {
-//   //   "before": "var radius=5, x=1, y=4;"
-//   // }
-// });
-

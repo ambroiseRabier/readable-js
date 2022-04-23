@@ -61,13 +61,14 @@ const allNodeParser = {
   "IfStatement": (node : IfStatement, options?: ParseNodeOptions) => {
     return [{
       lineNumber: node.loc?.start.line,
-      message: `##if-${node.test.range![0]}-${node.test.range![1]}##${generateReadableExpression(node.test)}`, // Because if true, Skip because if false, and generateReadableExpression
+      // Because if true, Skip because if false, and generateReadableExpression
+      message: `##if-${node.test.range![0]}-${node.test.range![1]}## ${generateReadableExpression(node.test)}`,
     }];
   },
   "WhileStatement": (node : WhileStatement, options?: ParseNodeOptions) => {
     return [{
       lineNumber: node.loc?.start.line,
-      message: 'todo',
+      message: `##while-${node.test.range![0]}-${node.test.range![1]}##`,
     }];
   },
   "ExpressionStatement": (node : ExpressionStatement, options?: ParseNodeOptions) => {
