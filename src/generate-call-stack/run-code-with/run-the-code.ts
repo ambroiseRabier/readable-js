@@ -20,7 +20,7 @@ export function prepareEvalCode(code: string, argsStr: string[]): string {
  *       But probably doesn't have access to the scope in which `runCodeWith` is called. I tried one or two thing
  *       with binding `this`, without success.
  */
-export function runCodeWith(code: string, args?: Map<string, any>, context?: any) {
+export function runCodeWith(code: string, args?: Map<string, any>) {
   if (!args) {
     args = new Map();
   }

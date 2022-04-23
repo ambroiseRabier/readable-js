@@ -10,7 +10,8 @@ import {
   MemberExpression,
   Super,
   FunctionExpression,
-  Literal
+  Literal,
+  BlockStatement
 } from 'estree';
 import {ENode, ExpressionWithProperty} from './estree-helper';
 
@@ -27,6 +28,9 @@ export const is = {
   },
   "ExpressionStatement": (node: ENode): node is ExpressionStatement => {
     return node.type === "ExpressionStatement";
+  },
+  "BlockStatement": (node: ENode): node is BlockStatement => {
+    return node.type === "BlockStatement";
   },
   "ReturnStatement": (node: ENode): node is ReturnStatement => {
     return node.type === "ReturnStatement";

@@ -1,4 +1,4 @@
-import {runCodeWithSpy} from './generate-call-stack';
+import {callsToCode, runCodeWithSpy} from './generate-call-stack';
 
 it('give calls', function () {
   const r = runCodeWithSpy(`
@@ -64,3 +64,70 @@ it('give calls', function () {
 //   expect(r).toEqual({
 //     "calls": 2  });
 // })
+
+
+it('callsToCode', function () {
+  const code = `
+    var i = 0;
+    i++;
+  `;
+  const r = runCodeWithSpy(code);
+
+  expect(callsToCode(code, r.calls)).toEqual([
+    "var i = 0;",
+    "i++;"
+  ]);
+});
+
+
+function assertCode(code, expectation) {
+  const r = runCodeWithSpy(code);
+
+  expect(
+    callsToCode(code, r.calls)
+  ).toEqual(
+    expectation
+  );
+}
+
+it(('inline if'), function () {
+  assertCode(`
+    var i = 0;
+    if (true) { i--; }
+  `, [
+    "var i = 0;",
+    "if (true) { i--; }",
+  ]);
+  assertCode(`
+    var i = 0;
+    if (false) { i--; }
+  `, [
+    "var i = 0;",
+    "if (false) { i--; }",
+  ]);
+});
+
+it(('if'), function () {
+  assertCode(`
+    var i = 0;
+    if (true) { 
+      i--;
+    }`,
+    [
+    "var i = 0;",
+    `if (true) { 
+      i--;
+    }`
+  ]);
+  assertCode(`
+    var i = 0;
+    if (false) { 
+      i--;
+    }`,
+    [
+    "var i = 0;",
+    `if (false) { 
+      i--;
+    }`,
+  ]);
+});
