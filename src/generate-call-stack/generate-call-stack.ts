@@ -13,8 +13,16 @@ import {insertSpies} from './insert-spies/insert-spies';
  * position of the code.
  * @param code
  */
-export function generateCallStack(code: string) {
-  return runCodeWithSpy(code);
+export function generateCallStack(code: string): { calls: { loc: SourceLocation; code: string; range: [number, number] }[]; error: any } {
+  const r = runCodeWithSpy(code);
+
+  return {
+    error: r.error,
+    calls: r.calls.map(e => ({
+      ...e,
+      code: code.substring(...e.range)
+    })),
+  };
 }
 
 
@@ -28,7 +36,7 @@ export function callsToCode(code: string, calls: SpyParams[]): string[] {
 }
 
 
-export function runCodeWithSpy(code: string) {
+export function runCodeWithSpy(code: string): { calls: SpyParams[]; error: any } {
   const calls: SpyParams[] = [];
 
   // may need to change 'spy' name to avoid collision
