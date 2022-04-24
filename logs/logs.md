@@ -609,3 +609,19 @@ var a = 4;
 
 I can put marker like that everywhere ?
 This also give me the callstack
+
+---
+
+24 april 2022
+
+les if, si je veux savoir si c'est true ou false, suffit que je regarde le next call.
+pas besoin d'evaluer l'expression.
+
+pour une function, si je veux savoir si appeler, c'est un spy après la declaration de la fc (càd ds la fc).
+
+pour une boucle, je sais que cela stop si un spy est appeler après la boucle.
+
+---
+
+escodegen: http://jsfiddle.net/wittnl/q5d2pq6n/
+

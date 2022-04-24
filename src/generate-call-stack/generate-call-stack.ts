@@ -35,8 +35,7 @@ export function callsToCode(code: string, calls: SpyParams[]): string[] {
   return calls.map(e => code.substring(...e.range));
 }
 
-
-export function runCodeWithSpy(code: string): { calls: SpyParams[]; error: any } {
+export function runCodeWithSpy(code: string, evaluation?: boolean): { calls: SpyParams[]; error: any } {
   const calls: SpyParams[] = [];
 
   // may need to change 'spy' name to avoid collision

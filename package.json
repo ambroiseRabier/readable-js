@@ -10,10 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "escodegen": "^2.0.0",
     "esprima": "^4.0.1",
     "util": "^0.12.4"
   },
   "devDependencies": {
+    "@types/escodegen": "0.0.7",
     "@types/esprima": "^4.0.3",
     "@types/jest": "^27.4.1",
     "jest": "^27.5.1",

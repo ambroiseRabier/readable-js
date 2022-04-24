@@ -70,7 +70,7 @@ export class ReadableJS {
 
   static getMessages(code: string): Message[][] {
     if (code.length === 0) {
-      return [];
+      return []
     }
 
     const r = esprima.parseScript(code, {

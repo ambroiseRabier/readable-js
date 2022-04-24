@@ -1,16 +1,13 @@
 import {insertSpies} from './insert-spies';
 
-// describe('insertSpyCodeBefore', () => {
-//   it('return correct', function () {
-//
-//   });
-// });
 
 it('should insert spy with correct params', function () {
   const r = insertSpies(`var i = 0;`, 'spy');
   const e =
-`
+`var i = 0;
 ;spy({
+  
+  evaluateVar: {i: i},
   range: [0, 10],
   loc: {
     "start": {
@@ -23,7 +20,7 @@ it('should insert spy with correct params', function () {
     }
   }
 });
-var i = 0;`
+`
 
   expect(r).toEqual(e);
 });
@@ -31,9 +28,9 @@ var i = 0;`
 it('should insert custom spy', function () {
   const r = insertSpies(`var j = 1;`, 'spy', e => e.range![1] + '');
   const e =
-`
+`var j = 1;
 ;spy(10);
-var j = 1;`
+`
 
   expect(r).toEqual(e);
 });
@@ -42,24 +39,27 @@ it('insert multiple spy', function () {
   const r = insertSpies(`var i = 0; var j = 0;`, 'spy', node => '');
 
   const e =
+`var i = 0;
+;spy();
+ var j = 0;
+;spy();
 `
-;spy();
-var i = 0; 
-;spy();
-var j = 0;`
 
   expect(r).toEqual(e);
 })
 
 
-describe('condition', () => {
-
-
-  it('should insert spy with correct params for condition', function () {
-    const r = insertSpies(`if (true) { 1+1 }`, 'spy');
+describe('variable', () => {
+  it('multiple declarations', function () {
+    const r = insertSpies(`var i = 0, j = 1;`, 'spy');
     const e =
-`
+      `var i = 0, j = 1;
 ;spy({
+  
+  evaluateVar: {
+i: i,
+j: j,
+},
   range: [0, 17],
   loc: {
     "start": {
@@ -72,21 +72,54 @@ describe('condition', () => {
     }
   }
 });
-if (true) { 
+`
+
+    expect(r).toEqual(e);
+  });
+});
+
+
+describe('condition', () => {
+
+
+  it('should insert spy with correct params for condition', function () {
+    const r = insertSpies(`if (true) { 1+1 }`, 'spy');
+    const e =
+`if (true) {
 ;spy({
-  range: [12, 16],
+  ifConditionTest: true,
+  
+  range: [0, 17],
   loc: {
     "start": {
       "line": 1,
-      "column": 12
+      "column": 0
     },
     "end": {
       "line": 1,
-      "column": 16
+      "column": 17
     }
   }
 });
-1+1 }`
+ 1+1 } else {
+
+;spy({
+  ifConditionTest: false,
+  
+  range: [0, 17],
+  loc: {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 17
+    }
+  }
+});
+
+}`
 
     expect(r).toEqual(e);
   });
@@ -101,16 +134,18 @@ if (true) {
 `, 'spy', node => '');
 
     const e =
-      `
-
-;spy();
+`
 let i = 0;
+;spy();
+
+if (true) {
+;spy();
+
+  i++;
+} else {
 
 ;spy();
-if (true) {
-  
-;spy();
-i++;
+
 }  
 `
 
@@ -162,19 +197,25 @@ if (true) {
 
     const e =
       `
-
-;spy();
 let i = 0;
+;spy();
+
+if (true) {
+;spy();
+
+  if (true) {
+;spy();
+
+    i++;
+  } else {
 
 ;spy();
-if (true) {
-  
+
+}
+} else {
+
 ;spy();
-if (true) {
-    
-;spy();
-i++;
-  }
+
 }
 `
 
