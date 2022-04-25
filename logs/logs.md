@@ -644,4 +644,7 @@ options here: https://prettier.io/docs/en/options.html
 
 maybe i use it for the lib itself, and not just for tests.
 
-Can also use // language=js from webstorm
+Can also use // language=js from webstorm.
+I thought it didn't worked so I use escaped version %60, but it actually worked.
+%60 cannot be parsed as js by webstorm. I like the reformat of webstorm, help
+reading the expected code.

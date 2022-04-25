@@ -1,17 +1,44 @@
 import {insertSpies, Options} from './insert-spies';
+import * as prettier from 'prettier';
 
-// Note:
-// - %24 == $
-// - %60 == `
 
-const helpfulTestOptions: Options =  {
+const helpfulTestOptions: Options = {
   range: false,
   loc: false,
   classNames: {
     value: 'val',
     variable: 'var'
   },
-}
+};
+
+// use default formatter (prettier insist)
+const pFormat = (code: string) => prettier.format(code, {parser: 'babel'});
+
+// prettier is not perfect for that purpose, it does preserve some spacing
+const expectCodeToSpies = (code: string, beEqualTo: string) => {
+  try {
+    expect(
+      pFormat(insertSpies(code, helpfulTestOptions))
+    ).toEqual(
+      pFormat(beEqualTo)
+    );
+  } catch (e) {
+    // try to catch formatting error, hard to debug with what prettier give us.
+    if (typeof e == 'string' && e.includes('Error')) {
+      console.warn("format didn't work");
+      console.warn(e);
+      expect(
+        insertSpies(code, helpfulTestOptions)
+      ).toEqual(
+        "Error: Formatting issue, probably invalid code somewhere.\n\n" + beEqualTo
+      );
+    } else {
+      // else leave the error as it is.
+      throw e;
+    }
+  }
+};
+
 
 describe('options', () => {
   it('have sensible defaults', function () {
@@ -23,9 +50,9 @@ describe('options', () => {
   evaluateVar: {
     i: i,
   },
-  nodeCode: "var i = 0;",
+  nodeCode: \`var i = 0;\`,
   message: [
-    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
   ],
   range: [0, 10],
   loc: {
@@ -39,10 +66,9 @@ describe('options', () => {
     }
   },
 });
-`
+`;
 
-    // note: decodeURI seem to ignore some case (%24) here.
-    expect(r).toEqual(unescape(e));
+    expect(r).toEqual(e);
   });
 
   it('can change spy name', function () {
@@ -55,7 +81,7 @@ describe('options', () => {
     const e =
       `var j = 1;
 ;spy(10);
-`
+`;
 
     expect(r).toEqual(e);
   });
@@ -69,15 +95,15 @@ describe('options', () => {
   evaluateVar: {
     i: i,
   },
-  nodeCode: "var i = 0;",
+  nodeCode: \`var i = 0;\`,
   message: [
-    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
   ],
   range: [0, 10],
   
 });
-`
-    expect(r).toEqual(unescape(e));
+`;
+    expect(r).toEqual(e);
   });
 
   it('can remove range', function () {
@@ -89,9 +115,9 @@ describe('options', () => {
   evaluateVar: {
     i: i,
   },
-  nodeCode: "var i = 0;",
+  nodeCode: \`var i = 0;\`,
   message: [
-    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
   ],
   
   loc: {
@@ -105,8 +131,8 @@ describe('options', () => {
     }
   },
 });
-`
-    expect(r).toEqual(unescape(e));
+`;
+    expect(r).toEqual(e);
   });
 
   it('can change class names', function () {
@@ -127,12 +153,12 @@ describe('options', () => {
   },
   nodeCode: "var i = 0;",
   message: [
-    %60Create the variable <span class='val'>i</span> and set it to <span class='var'>%24{i}</span>%60
+    \`Create the variable <span class='val'>i</span> and set it to <span class='var'>\${i}</span>\`
   ],
   
   
 });
-`
+`;
   });
 
 });
@@ -142,38 +168,35 @@ it('insert multiple spy', function () {
   const r = insertSpies(`var i = 0; var j = 0;`, {spyParamHook: node => ''});
 
   const e =
-`var i = 0;
+    `var i = 0;
 ;spy();
  var j = 0;
 ;spy();
-`
+`;
 
   expect(r).toEqual(e);
-})
+});
 
 
 describe('variable', () => {
   it('multiple declarations: var i = 0, j = 1;', function () {
-    const r = insertSpies(`var i = 0, j = 1;`, helpfulTestOptions);
-    const e =
-      `var i = 0, j = 1;
-;spy({
-  
-  evaluateVar: {
-    i: i,
-    j: j,
-  },
-  nodeCode: "var i = 0, j = 1;",
-  message: [
-    %60Create the variable <span class='var'>i</span> and set it to <span class='val'>%24{i}</span>%60,
-    %60Create the variable <span class='var'>j</span> and set it to <span class='val'>%24{j}</span>%60
-  ],
-  
-  
-});
-`
-
-    expect(r).toEqual(unescape(e));
+    expectCodeToSpies(`var i = 0, j = 1;`, `
+      var i = 0, j = 1;
+      ;spy({
+        
+        evaluateVar: {
+          i: i,
+          j: j,
+        },
+        nodeCode: \`var i = 0, j = 1;\`,
+        message: [
+          \`Create the variable <span class='var'>i</span> and set it to <span class='val'>\${i}</span>\`,
+          \`Create the variable <span class='var'>j</span> and set it to <span class='val'>\${j}</span>\`
+        ],
+        
+        
+      });
+    `);
   });
 });
 
@@ -181,103 +204,75 @@ describe('ExpressionStatement', () => {
 
 
   it('increment: i++; UpdateExpression', function () {
-    const r = insertSpies(`i++;`, helpfulTestOptions);
-    const e =
-      `i++;
-;spy({
-  
-  evaluateVar: {
-    i: i,
-  },
-  nodeCode: "i++;",
-  message: [
-    %60increment <span class='readable-variable'>i</span> by <span class='readable-value'>1</span>%60
-  ],
-  
-  
-`
-
-    expect(r).toEqual(e);
+    expectCodeToSpies(`i++;`, `
+      i++;
+      ;spy({
+        evaluateVar: {
+          i: i,
+        },
+        nodeCode: \`i++;\`,
+        message: [
+          \`increment <span class='readable-variable'>i</span> by <span class='readable-value'>1</span>\`
+        ],
+      });
+    `);
   });
 
   it('i+=1 AssignmentExpression', function () {
-    const r = insertSpies(`i+=1;`, helpfulTestOptions);
-    const e =
-      `i+=1;
-;spy({
-  
-  evaluateVar: {
-    i: i,
-  },
-  nodeCode: "i+=1;",
-  message: [
-    %60add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>%24{i}</span>%60
-  ],
-  
-  
-});
-`
-
-    expect(r).toEqual(e);
+    expectCodeToSpies(`i+=1;`, `
+      i+=1;
+      ;spy({
+        evaluateVar: {
+          i: i,
+        },
+        nodeCode: "i+=1;",
+        message: [
+          \`add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>\${i}</span>\`
+        ],
+      });
+    `);
   });
 
   it('i = i + 1 AssignmentExpression', function () {
-    const r = insertSpies(`i+=1;`, helpfulTestOptions);
-    const e =
-      `i+=1;
-;spy({
-  
-  evaluateVar: {
-    i: i,
-  },
-  nodeCode: "i = i + 1;",
-  message: [
-    %60add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>%24{i}</span>%60
-  ],
-  
-  
-});
-`
-
-    expect(r).toEqual(e);
+    expectCodeToSpies(`i+=1;`, `
+      i+=1;
+      ;spy({
+        
+        evaluateVar: {
+          i: i,
+        },
+        nodeCode: "i = i + 1;",
+        message: [
+          \`add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>\${i}</span>\`
+        ],
+        
+        
+      });
+    `);
   });
 
   it('i Identifier', function () {
-    const r = insertSpies(`i;`, helpfulTestOptions);
-    const e =
-      `i;
-;spy({
-  
-  
-  nodeCode: "i;",
-  message: [
-    %60%60
-  ],
-  
-  
-});
-`
-
-    expect(r).toEqual(e);
+    expectCodeToSpies(`i;`, `
+      i;
+      ;spy({
+        nodeCode: "i;",
+        message: [
+          \`\`
+        ],
+      });
+    `);
   });
 
   it('1+1; ExpressionStatement', function () {
-    const r = insertSpies(`1+1;`, helpfulTestOptions);
-    const e =
-      `1+1;
-;spy({
-  
-  
-  nodeCode: "1+1;",
-  message: [
-    %60%60
-  ],
-  
-  
-});
-`
-
-    expect(r).toEqual(e);
+    expectCodeToSpies(`1+1;`, `
+      1+1;
+      ;spy({
+        nodeCode: "1+1;",
+        message: [
+          \`\`
+        ],
+      });
+    `);
   });
 
 });
@@ -286,142 +281,180 @@ describe('ExpressionStatement', () => {
 describe('condition', () => {
 
   it('if', function () {
-    const r = insertSpies(`
+    expectCodeToSpies(`
 if (true) {
 }  
-`, helpfulTestOptions);
+`,
+      // language=js
+      `
+        if (true) {
+          ;spy({
+            ifConditionTest: true,
+            
+            nodeCode: \`if (true) {
+}\`,
+            message: [
+              \`Because\`
+            ],
+          });
 
-    const e =
-`
-if (true) {
-;spy({
-  ifConditionTest: true,
-  
-  nodeCode: "if (true) {
-}",
-  message: [
-    \`Because\`
-  ],
-  
-  
-});
+        } else {
 
-} else {
-
-;spy({
-  ifConditionTest: false,
-  
-  nodeCode: "if (true) {
-}",
-  message: [
-    \`Skip because\`
-  ],
-  
-  
-});
-
-}  
-`
-
-    expect(r).toEqual(e);
+          ;spy({
+            ifConditionTest: false,
+            
+            nodeCode: \`if (true) {
+}\`,
+            message: [
+              \`Skip because\`
+            ],
+          });
+        }
+      `);
   });
 
 
   it('if...else', function () {
-    const r = insertSpies(`
+    expectCodeToSpies(`
 if (true) {
 } else {
 }
-`, helpfulTestOptions);
-
-    const e =
+`,
+      // language=js
       `
-if (true) {
-;spy({
-  ifConditionTest: true,
-  
-  nodeCode: "if (true) {
+        if (true) {
+          ;spy({
+            ifConditionTest: true,
+            
+            nodeCode: \`if (true) {
 } else {
-}",
-  message: [
-    \`Because\`
-  ],
-  
-  
-});
+}\`,
+            message: [
+              \`Because\`
+            ],
+          });
 
+        } else {
+          ;spy({
+            ifConditionTest: false,
+            
+            nodeCode: \`if (true) {
 } else {
-;spy({
-  ifConditionTest: false,
-  
-  nodeCode: "if (true) {
-} else {
-}",
-  message: [
-    \`Skip because\`
-  ],
-  
-  
-});
+}\`,
+            message: [
+              \`Skip because\`
+            ],
+          });
+        }
 
-}
-`
-
-    expect(r).toEqual(e);
+      `
+    );
   });
 
 
   it('if nested', function () {
-    const r = insertSpies(`
-if (true) {
-  if (true) {
-  }
-}
-`, helpfulTestOptions);
+    expectCodeToSpies(`
+        if (true) {
+          if (true) {
+          }
+        }
+        `,
+      // language=js
 
-    const e =
-      `if (true) {
-        spy({
-          ifConditionTest: true,
-
-          nodeCode: %60if (true) {
-  if (true) {
-  }
-}%60,
-          message: [%60Because%60],
-        });
-
+      `
         if (true) {
           spy({
             ifConditionTest: true,
 
-            nodeCode: %60if (true) {
-  }%60,
-            message: [%60Because%60],
+            nodeCode: \`if (true) {
+          if (true) {
+          }
+        }\`,
+            message: [\`Because\`],
           });
+
+          if (true) {
+            spy({
+              ifConditionTest: true,
+
+              nodeCode: \`if (true) {
+          }\`,
+              message: [\`Because\`],
+            });
+          } else {
+            spy({
+              ifConditionTest: false,
+
+              nodeCode: \`if (true) {
+          }\`,
+              message: [\`Skip because\`],
+            });
+          }
         } else {
           spy({
             ifConditionTest: false,
 
-            nodeCode: %60if (true) {
-  }%60,
-            message: [%60Skip because%60],
+            nodeCode: \`if (true) {
+          if (true) {
+          }
+        }\`,
+            message: [\`Skip because\`],
           });
         }
-      } else {
-        spy({
-          ifConditionTest: false,
+      `
+    );
+  });
 
-          nodeCode: %60if (true) {
-  if (true) {
-  }
-}%60,
-          message: [%60Skip because%60],
+
+});
+
+describe('function', () => {
+  it('function declaration and call', function () {
+    expectCodeToSpies(
+      // language=js
+
+      `
+      e();
+      
+      function e () {
+      }
+    `,
+      // language=js
+      `
+      spy({
+        evaluateVar: {
+          e: e,
+        },
+        nodeCode:\`e();\`,
+        message: [\`Call function e\`],
+      });
+      e();
+      
+      function e() {}
+    `);
+  });
+
+  it('function body is being spied', function () {
+    expectCodeToSpies(`
+      function e () {
+        var i = 0;
+      }
+    `,
+      // language=js
+      `
+      function e() {
+        var i = 0;
+        spy({
+          evaluateVar: {
+            i: i,
+          },
+          nodeCode: \`var i = 0;\`,
+          message: [
+            \`Create the variable <span class='var'>i</span> and set it to <span class='val'>\${i}</span>\`,
+          ],
         });
       }
-      `
-
-    expect(prettier.format(r)).toEqual(prettier.format(unescape(e)));
+    `);
   });
 
 
