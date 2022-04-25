@@ -6,9 +6,11 @@ import {
   ExpressionStatement, IfStatement, SourceLocation, VariableDeclaration, AssignmentExpression, Identifier, Pattern
 } from 'estree';
 import {is} from '../../enode-type-check';
+import {parseNode} from '../../parseNode';
+import {EsprimaNode} from '../../estree-helper';
+import {generateReadable} from '../generate-readable/generate-readable';
 
-// esprima.body[0] for example
-type EsprimaNode = Pick<Program, "body">['body'][number];
+
 
 interface HasRangeLOC {
   range: [number, number];
@@ -32,7 +34,7 @@ type EsprimaNodeWithRangeLOC = EsprimaNode & HasRangeLOC;
 //   return fc ? fc(eNode as any) : undefined;
 // }
 
-
+// note: the node code could be found ulteriorly using range, but I find it more user friendly this way.
 function createSpyString (
   originalCode: string,
   eNode: EsprimaNode,
@@ -44,7 +46,7 @@ function createSpyString (
   const [start, end] = eNode.range!;
 
 
-  const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n${evaluateVar.map(varName => `${varName}: ${varName},\n`).join('')}},`;
+  const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
   const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`;
   const nodeCode = `nodeCode: "${originalCode.substring(eNode.range![0], eNode.range![1])}",`;
 
@@ -52,6 +54,7 @@ function createSpyString (
   ${ifConditionTestString}
   ${evaluateVarString}
   ${nodeCode}
+  message: ${"[\n    `" + generateReadable(eNode, evaluateVar, ifConditionTest).join('`,\n    `') + "`\n  ]"},
   range: [${start}, ${end}],
   loc: {
     "start": {

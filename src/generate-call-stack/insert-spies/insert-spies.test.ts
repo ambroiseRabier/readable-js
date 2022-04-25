@@ -1,5 +1,9 @@
 import {insertSpies} from './insert-spies';
 
+// Note:
+// - %24 == $
+// - %60 == `
+
 
 it('should insert spy with correct params', function () {
   const r = insertSpies(`var i = 0;`, 'spy');
@@ -8,8 +12,12 @@ it('should insert spy with correct params', function () {
 ;spy({
   
   evaluateVar: {
-i: i,
-},
+    i: i,
+  },
+  nodeCode: "var i = 0;",
+  message: [
+    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+  ],
   range: [0, 10],
   loc: {
     "start": {
@@ -24,7 +32,8 @@ i: i,
 });
 `
 
-  expect(r).toEqual(e);
+  // note: decodeURI seem to ignore some case (%24) here.
+  expect(r).toEqual(unescape(e));
 });
 
 it('should insert custom spy', function () {
@@ -59,9 +68,14 @@ describe('variable', () => {
 ;spy({
   
   evaluateVar: {
-i: i,
-j: j,
-},
+    i: i,
+    j: j,
+  },
+  nodeCode: "var i = 0, j = 1;",
+  message: [
+    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60,
+    %60Create the variable <span class='readable-variable'>j</span> and set it to <span class='readable-value'>%24{j}</span>%60
+  ],
   range: [0, 17],
   loc: {
     "start": {
