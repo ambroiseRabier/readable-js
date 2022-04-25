@@ -1,12 +1,10 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
-import {Program} from 'esprima';
 import {
   Expression, UpdateExpression,
-  ExpressionStatement, IfStatement, SourceLocation, VariableDeclaration, AssignmentExpression, Identifier, Pattern
+  ExpressionStatement, IfStatement, VariableDeclaration, AssignmentExpression, Identifier, Pattern
 } from 'estree';
 import {is} from '../../enode-type-check';
-import {parseNode} from '../../parseNode';
 import {EsprimaNode} from '../../estree-helper';
 import {generateReadable} from '../generate-readable/generate-readable';
 
@@ -46,7 +44,7 @@ function createSpyString (
 
   const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
   const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`;
-  const nodeCode = `nodeCode: "${originalCode.substring(eNode.range![0], eNode.range![1])}",`;
+  const nodeCode = unescape(`nodeCode: %60${originalCode.substring(eNode.range![0], eNode.range![1])}%60,`); // %60 == `
   const range = !options.range ? '' : `range: [${start}, ${end}],`;
   const loc = !options.loc ? '' : `loc: {
     "start": {
@@ -103,35 +101,36 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
   const m = new Map<EsprimaNode['type'] | Pattern["type"], (e: any) => void>([
 
     ["IfStatement", (e: IfStatement) => {
-      // without else
-      if (!e.alternate) {
-        const spyStringOpening = createSpyString(originalCode, e, options, undefined, true);
-        insertedCodeLength.push(spyStringOpening.length);
+      const spyStringOpening = createSpyString(originalCode, e, options, undefined, true);
+      insertedCodeLength.push(spyStringOpening.length);
 
-        // add spy right after opening curvy bracket
-        newCode = insertSpy({
-          code: newCode,
-          index: e.consequent.range![0] + 1,
-          offset,
-          spyString: spyStringOpening,
-        });
+      // add spy right after opening curvy bracket
+      newCode = insertSpy({
+        code: newCode,
+        index: e.consequent.range![0] + 1,
+        offset,
+        spyString: spyStringOpening,
+      });
 
-        // `if () {} spy()`, how do you know if the test is true or false ?
-        // you don't with a single if, unless you analyze what has been called previously
-        // to avoid such bothersome extra work, just add an else.
-        const spyStringClosing = createSpyString(originalCode, e, options, undefined, false);
-        insertedCodeLength.push(spyStringClosing.length);
+      // `if () {} spy()`, how do you know if the test is true or false ?
+      // you don't with a single if, unless you analyze what has been called previously
+      // to avoid such bothersome extra work, just add an else.
+      const spyStringClosing = createSpyString(originalCode, e, options, undefined, false);
+      insertedCodeLength.push(spyStringClosing.length);
 
-        // add spy right after closing curvy bracket
-        newCode = insertSpy({
-          code: newCode,
-          index: e.consequent.range![1],
-          offset: offset + spyStringOpening.length,
-          spyString: ` else {\n${spyStringClosing}\n}`,
-        });
-      } else {
-        console.warn('todo else in if');
-      }
+      // add spy right after closing curvy bracket
+      newCode = insertSpy({
+        code: newCode,
+
+        // without else, or with else
+        index: !e.alternate ? e.consequent.range![1] : e.alternate.range![0] + 1,
+
+        offset: offset + spyStringOpening.length,
+
+        // without else, or with else
+        spyString: !e.alternate ? ` else {\n${spyStringClosing}\n}` : spyStringClosing,
+      });
+
 
     }],
 
@@ -194,15 +193,6 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
     console.warn(`No spy put because unsupported node: ${eNode.type}, range: ${JSON.stringify(eNode.range)}`);
   }
 
-//   const evaluationPropertyCode = evaluation ? `evaluation: {
-//   code: "${codeToEvaluate}"
-//   evaluateTo: ${codeToEvaluate},
-// },` : "";
-
-  // ${evaluationPropertyCode}
-
-
-  // insert spy string in between (this won't work as easy when adding scope, if, loop, function, etc
   return {
     insertedCodeLength,
     newCode,

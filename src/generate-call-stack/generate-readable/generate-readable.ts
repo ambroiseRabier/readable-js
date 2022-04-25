@@ -1,8 +1,15 @@
 import {EsprimaNode} from '../../estree-helper';
 import {isPattern} from '../../enode-type-check';
-import {VariableDeclaration} from 'estree';
+import {AssignmentExpression, AssignmentOperator, Expression, IfStatement, VariableDeclaration} from 'estree';
 import {Options} from '../insert-spies/insert-spies';
 
+const ge = generateReadableExpression;
+
+function generateReadableExpression(e: Expression) {
+  const m = new Map<Expression["type"], (e: Expression|any) => string>([
+
+  ]);
+}
 
 export function generateReadable(eNode: EsprimaNode, options: Required<Options>, evaluateVar?: string[], ifConditionTest?: boolean): string[] {
   const m = new Map<EsprimaNode['type'], (e: EsprimaNode|any) => string[]>([
@@ -37,7 +44,13 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
 
 
       return messages;
-    }]
+    }],
+
+    ["IfStatement", (e: IfStatement) => {
+      return [
+        `${ifConditionTest ? 'Because' : 'Skip because'}`
+      ];
+    }],
   ]);
 
   const parser = m.get(eNode.type);

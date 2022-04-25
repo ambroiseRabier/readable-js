@@ -210,7 +210,30 @@ describe('ExpressionStatement', () => {
     i: i,
   },
   nodeCode: "i+=1;",
-  message: %60add add <span class='readable-value'>1</span> to <span class='readable-variable'>i</span> and set <span class='readable-variable'>i</span> to <span class='readable-value'>%24{i}</span>%60
+  message: [
+    %60add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>%24{i}</span>%60
+  ],
+  
+  
+});
+`
+
+    expect(r).toEqual(e);
+  });
+
+  it('i = i + 1 AssignmentExpression', function () {
+    const r = insertSpies(`i+=1;`, helpfulTestOptions);
+    const e =
+      `i+=1;
+;spy({
+  
+  evaluateVar: {
+    i: i,
+  },
+  nodeCode: "i = i + 1;",
+  message: [
+    %60add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>%24{i}</span>%60
+  ],
   
   
 });
@@ -222,59 +245,80 @@ describe('ExpressionStatement', () => {
   it('i Identifier', function () {
     const r = insertSpies(`i;`, helpfulTestOptions);
     const e =
-      `` // somewhat correct, but I dislike it
+      `i;
+;spy({
+  
+  
+  nodeCode: "i;",
+  message: [
+    %60%60
+  ],
+  
+  
+});
+`
 
     expect(r).toEqual(e);
   });
+
+  it('1+1; ExpressionStatement', function () {
+    const r = insertSpies(`1+1;`, helpfulTestOptions);
+    const e =
+      `1+1;
+;spy({
+  
+  
+  nodeCode: "1+1;",
+  message: [
+    %60%60
+  ],
+  
+  
+});
+`
+
+    expect(r).toEqual(e);
+  });
+
 });
 
 
 describe('condition', () => {
 
-
-  it('should insert spy with correct params for condition', function () {
-    const r = insertSpies(`if (true) { 1+1 }`, helpfulTestOptions);
-    const e =
-`if (true) {
-;spy({
-  ifConditionTest: true,
-  
-
-});
- 1+1 } else {
-
-;spy({
-  ifConditionTest: false,
-  
-
-});
-
-}`
-
-    expect(r).toEqual(e);
-  });
-
-
   it('if', function () {
     const r = insertSpies(`
-let i = 0;
 if (true) {
-  i++;
 }  
 `, helpfulTestOptions);
 
     const e =
 `
-let i = 0;
-;spy();
-
 if (true) {
-;spy();
+;spy({
+  ifConditionTest: true,
+  
+  nodeCode: "if (true) {
+}",
+  message: [
+    \`Because\`
+  ],
+  
+  
+});
 
-  i++;
 } else {
 
-;spy();
+;spy({
+  ifConditionTest: false,
+  
+  nodeCode: "if (true) {
+}",
+  message: [
+    \`Skip because\`
+  ],
+  
+  
+});
 
 }  
 `
@@ -285,29 +329,41 @@ if (true) {
 
   it('if...else', function () {
     const r = insertSpies(`
-let i = 0;
 if (true) {
-  i++;
 } else {
-  i--;
 }
 `, helpfulTestOptions);
 
     const e =
       `
-
-;spy();
-let i = 0;
-
-;spy();
 if (true) {
+;spy({
+  ifConditionTest: true,
   
-;spy();
-i++;
+  nodeCode: "if (true) {
 } else {
+}",
+  message: [
+    \`Because\`
+  ],
   
-;spy();
-i--;
+  
+});
+
+} else {
+;spy({
+  ifConditionTest: false,
+  
+  nodeCode: "if (true) {
+} else {
+}",
+  message: [
+    \`Skip because\`
+  ],
+  
+  
+});
+
 }
 `
 
@@ -317,39 +373,55 @@ i--;
 
   it('if nested', function () {
     const r = insertSpies(`
-let i = 0;
 if (true) {
   if (true) {
-    i++;
   }
 }
 `, helpfulTestOptions);
 
     const e =
-      `
-let i = 0;
-;spy();
+      `if (true) {
+        spy({
+          ifConditionTest: true,
 
-if (true) {
-;spy();
-
+          nodeCode: %60if (true) {
   if (true) {
-;spy();
+  }
+}%60,
+          message: [%60Because%60],
+        });
 
-    i++;
-  } else {
+        if (true) {
+          spy({
+            ifConditionTest: true,
 
-;spy();
+            nodeCode: %60if (true) {
+  }%60,
+            message: [%60Because%60],
+          });
+        } else {
+          spy({
+            ifConditionTest: false,
 
-}
-} else {
+            nodeCode: %60if (true) {
+  }%60,
+            message: [%60Skip because%60],
+          });
+        }
+      } else {
+        spy({
+          ifConditionTest: false,
 
-;spy();
+          nodeCode: %60if (true) {
+  if (true) {
+  }
+}%60,
+          message: [%60Skip because%60],
+        });
+      }
+      `
 
-}
-`
-
-    expect(r).toEqual(e);
+    expect(prettier.format(r)).toEqual(prettier.format(unescape(e)));
   });
 
 

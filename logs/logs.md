@@ -631,3 +631,17 @@ escodegen: http://jsfiddle.net/wittnl/q5d2pq6n/
 
 should I generate the message in the spy ?
 This could be less code to parse the AST. Maybe.
+
+---
+
+some stuff get hard to read. the nested if, are not readable. I need something to reformat.
+
+beautify js ? or prettier js ?
+
+prettier has default tab == 2, and 4 times the stars.
+
+options here: https://prettier.io/docs/en/options.html
+
+maybe i use it for the lib itself, and not just for tests.
+
+Can also use // language=js from webstorm
