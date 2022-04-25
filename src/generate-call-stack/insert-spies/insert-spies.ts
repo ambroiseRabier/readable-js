@@ -1,7 +1,10 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 import {Program} from 'esprima';
-import {ExpressionStatement, IfStatement, SourceLocation, VariableDeclaration} from 'estree';
+import {
+  Expression, UpdateExpression,
+  ExpressionStatement, IfStatement, SourceLocation, VariableDeclaration, AssignmentExpression, Identifier, Pattern
+} from 'estree';
 import {is} from '../../enode-type-check';
 
 // esprima.body[0] for example
@@ -31,6 +34,7 @@ type EsprimaNodeWithRangeLOC = EsprimaNode & HasRangeLOC;
 
 
 function createSpyString (
+  originalCode: string,
   eNode: EsprimaNode,
   spyFcName: string,
   spyParamHook?: (e: EsprimaNode) => string,
@@ -41,11 +45,13 @@ function createSpyString (
 
 
   const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n${evaluateVar.map(varName => `${varName}: ${varName},\n`).join('')}},`;
-  const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`
+  const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`;
+  const nodeCode = `nodeCode: "${originalCode.substring(eNode.range![0], eNode.range![1])}",`;
 
   const spyFirstParam = spyParamHook ? spyParamHook(eNode) : `{
   ${ifConditionTestString}
   ${evaluateVarString}
+  ${nodeCode}
   range: [${start}, ${end}],
   loc: {
     "start": {
@@ -77,13 +83,14 @@ function insertSpy ({code, index, offset, spyString}: {
   return code.substring(0, index + offset) + spyString + code.substring(index + offset, code.length);
 }
 
-function insertSpyCodeBefore(
+function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, spyParamHook}: {
+  originalCode: string;
   newCode: string,
   eNode: EsprimaNodeWithRangeLOC,
   offset: number,
   spyFcName: string,
   spyParamHook?: (e: EsprimaNode) => string
-): {
+}): {
   // special case with if...else where there is two block statement, the offset for each is sent in order
   insertedCodeLength: number[];
   newCode: string;
@@ -91,12 +98,12 @@ function insertSpyCodeBefore(
 
   let insertedCodeLength: number[] = [];
 
-  const m = new Map<EsprimaNode['type'], (e: any) => void>([
+  const m = new Map<EsprimaNode['type'] | Pattern["type"], (e: any) => void>([
 
     ["IfStatement", (e: IfStatement) => {
       // without else
       if (!e.alternate) {
-        const spyStringOpening = createSpyString(e, spyFcName, spyParamHook, undefined, true);
+        const spyStringOpening = createSpyString(originalCode, e, spyFcName, spyParamHook, undefined, true);
         insertedCodeLength.push(spyStringOpening.length);
 
         // add spy right after opening curvy bracket
@@ -110,7 +117,7 @@ function insertSpyCodeBefore(
         // `if () {} spy()`, how do you know if the test is true or false ?
         // you don't with a single if, unless you analyze what has been called previously
         // to avoid such bothersome extra work, just add an else.
-        const spyStringClosing = createSpyString(e, spyFcName, spyParamHook, undefined, false);
+        const spyStringClosing = createSpyString(originalCode, e, spyFcName, spyParamHook, undefined, false);
         insertedCodeLength.push(spyStringClosing.length);
 
         // add spy right after closing curvy bracket
@@ -129,7 +136,7 @@ function insertSpyCodeBefore(
     ["VariableDeclaration", (e: VariableDeclaration) => {
       // i'm totally unsure about escodegen.generate(d.id), should work for variables, but the other things,
       // i don't know what they are.
-      const spyString = createSpyString(e, spyFcName, spyParamHook, e.declarations.map(d => escodegen.generate(d.id)));
+      const spyString = createSpyString(originalCode, e, spyFcName, spyParamHook, e.declarations.map(d => escodegen.generate(d.id)));
       insertedCodeLength.push(spyString.length);
 
       newCode = insertSpy({
@@ -139,6 +146,41 @@ function insertSpyCodeBefore(
         spyString,
       });
     }],
+
+    // can be i++; or i+=1 or 1+1
+    ["ExpressionStatement", (e: ExpressionStatement) => {
+      const getIdentifierName = new Map<Expression["type"], any>([
+        // i++;
+        ['UpdateExpression', (exp: UpdateExpression) => (getIdentifierName.get(exp.argument.type) ?? (() => ''))(exp.argument)],
+
+        // i+=1;
+        ['AssignmentExpression', (exp: AssignmentExpression) => escodegen.generate(exp.left)],
+
+        // i;
+        ['Identifier', (exp: Identifier) => exp.name],
+      ]);
+
+      const getName = getIdentifierName.get(e.expression.type);
+
+
+      if (getName) {
+        const name = getName(e.expression);
+
+        const spyString = createSpyString(originalCode, e, spyFcName, spyParamHook, [name]);
+        insertedCodeLength.push(spyString.length);
+
+        newCode = insertSpy({
+          code: newCode,
+          index: e.range![1],
+          offset,
+          spyString,
+        });
+
+      } else {
+        // do nothing, unsupported expession.
+      }
+
+    }]
 
   ]);
 
@@ -228,6 +270,12 @@ function getChildStatements(eNode: EsprimaNode): EsprimaNode[][] {
     ["ExpressionStatement", (next: ExpressionStatement) => {
       return [[]];
     }],
+
+    ["VariableDeclaration", (next: VariableDeclaration) => {
+      return [[]];
+    }],
+
+
   ]);
 
   const getChildFc = m.get(eNode.type);
@@ -280,7 +328,14 @@ export function insertSpies(
     const {
       insertedCodeLength,
       newCode
-    } = insertSpyCodeBefore(codeModified, last, offset, spyFcName, spyParamHook);
+    } = insertSpyCodeBefore({
+      originalCode: code,
+      newCode: codeModified,
+      eNode: last,
+      offset,
+      spyFcName,
+      spyParamHook,
+    });
 
     // doesn't matter that we modified the code before, because we take that in account with offset.
     codeModified = newCode;

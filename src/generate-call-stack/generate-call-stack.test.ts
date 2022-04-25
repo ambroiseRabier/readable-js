@@ -3,7 +3,7 @@ import {callsToCode, runCodeWithSpy} from './generate-call-stack';
 it('give calls', function () {
   const r = runCodeWithSpy(`
     var i = 0;
-    i++;
+    var j = 1;
   `);
 
   expect(r).toEqual({

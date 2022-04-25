@@ -7,7 +7,9 @@ it('should insert spy with correct params', function () {
 `var i = 0;
 ;spy({
   
-  evaluateVar: {i: i},
+  evaluateVar: {
+i: i,
+},
   range: [0, 10],
   loc: {
     "start": {
@@ -50,7 +52,7 @@ it('insert multiple spy', function () {
 
 
 describe('variable', () => {
-  it('multiple declarations', function () {
+  it('multiple declarations: var i = 0, j = 1;', function () {
     const r = insertSpies(`var i = 0, j = 1;`, 'spy');
     const e =
       `var i = 0, j = 1;
@@ -73,6 +75,72 @@ j: j,
   }
 });
 `
+
+    expect(r).toEqual(e);
+  });
+});
+
+describe('ExpressionStatement', () => {
+
+
+  it('increment: i++; UpdateExpression', function () {
+    const r = insertSpies(`i++;`, 'spy');
+    const e =
+      `i++;
+;spy({
+  
+  evaluateVar: {
+i: i,
+},
+  nodeCode: "i++;",
+  range: [0, 4],
+  loc: {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 4
+    }
+  }
+});
+`
+
+    expect(r).toEqual(e);
+  });
+
+  it('i+=1 AssignmentExpression', function () {
+    const r = insertSpies(`i+=1;`, 'spy');
+    const e =
+      `i+=1;
+;spy({
+  
+  evaluateVar: {
+i: i,
+},
+  nodeCode: "i+=1;",
+  range: [0, 5],
+  loc: {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 5
+    }
+  }
+});
+`
+
+    expect(r).toEqual(e);
+  });
+
+  it('i Identifier', function () {
+    const r = insertSpies(`i;`, 'spy');
+    const e =
+      `` // somewhat correct, but I dislike it
 
     expect(r).toEqual(e);
   });

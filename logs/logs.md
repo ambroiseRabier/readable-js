@@ -625,3 +625,9 @@ pour une boucle, je sais que cela stop si un spy est appeler après la boucle.
 
 escodegen: http://jsfiddle.net/wittnl/q5d2pq6n/
 
+---
+
+25 april 2022
+
+should I generate the message in the spy ?
+This could be less code to parse the AST. Maybe.
