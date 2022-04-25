@@ -1,14 +1,23 @@
-import {insertSpies} from './insert-spies';
+import {insertSpies, Options} from './insert-spies';
 
 // Note:
 // - %24 == $
 // - %60 == `
 
+const helpfulTestOptions: Options =  {
+  range: false,
+  loc: false,
+  classNames: {
+    value: 'val',
+    variable: 'var'
+  },
+}
 
-it('should insert spy with correct params', function () {
-  const r = insertSpies(`var i = 0;`, 'spy');
-  const e =
-`var i = 0;
+describe('options', () => {
+  it('have sensible defaults', function () {
+    const r = insertSpies(`var i = 0;`);
+    const e =
+      `var i = 0;
 ;spy({
   
   evaluateVar: {
@@ -28,26 +37,109 @@ it('should insert spy with correct params', function () {
       "line": 1,
       "column": 10
     }
-  }
+  },
 });
 `
 
-  // note: decodeURI seem to ignore some case (%24) here.
-  expect(r).toEqual(unescape(e));
-});
+    // note: decodeURI seem to ignore some case (%24) here.
+    expect(r).toEqual(unescape(e));
+  });
 
-it('should insert custom spy', function () {
-  const r = insertSpies(`var j = 1;`, 'spy', e => e.range![1] + '');
-  const e =
-`var j = 1;
+  it('can change spy name', function () {
+    const r = insertSpies(`var i = 0;`, {spyFcName: 'helloFC'});
+    expect(r).toContain('helloFC(');
+  });
+
+  it('can insert custom spy', function () {
+    const r = insertSpies(`var j = 1;`, {spyParamHook: e => e.range![1] + ''});
+    const e =
+      `var j = 1;
 ;spy(10);
 `
 
-  expect(r).toEqual(e);
+    expect(r).toEqual(e);
+  });
+
+  it('can remove loc', function () {
+    const r = insertSpies(`var i = 0;`, {loc: false});
+    const e =
+      `var i = 0;
+;spy({
+  
+  evaluateVar: {
+    i: i,
+  },
+  nodeCode: "var i = 0;",
+  message: [
+    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+  ],
+  range: [0, 10],
+  
+});
+`
+    expect(r).toEqual(unescape(e));
+  });
+
+  it('can remove range', function () {
+    const r = insertSpies(`var i = 0;`, {range: false});
+    const e =
+      `var i = 0;
+;spy({
+  
+  evaluateVar: {
+    i: i,
+  },
+  nodeCode: "var i = 0;",
+  message: [
+    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60
+  ],
+  
+  loc: {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 10
+    }
+  },
+});
+`
+    expect(r).toEqual(unescape(e));
+  });
+
+  it('can change class names', function () {
+    const r = insertSpies(`var i = 0;`, {
+      range: false,
+      loc: false,
+      classNames: {
+        value: 'val',
+        variable: 'var'
+      }
+    });
+    const e =
+      `var i = 0;
+;spy({
+  
+  evaluateVar: {
+    i: i,
+  },
+  nodeCode: "var i = 0;",
+  message: [
+    %60Create the variable <span class='val'>i</span> and set it to <span class='var'>%24{i}</span>%60
+  ],
+  
+  
+});
+`
+  });
+
 });
 
+
 it('insert multiple spy', function () {
-  const r = insertSpies(`var i = 0; var j = 0;`, 'spy', node => '');
+  const r = insertSpies(`var i = 0; var j = 0;`, {spyParamHook: node => ''});
 
   const e =
 `var i = 0;
@@ -62,7 +154,7 @@ it('insert multiple spy', function () {
 
 describe('variable', () => {
   it('multiple declarations: var i = 0, j = 1;', function () {
-    const r = insertSpies(`var i = 0, j = 1;`, 'spy');
+    const r = insertSpies(`var i = 0, j = 1;`, helpfulTestOptions);
     const e =
       `var i = 0, j = 1;
 ;spy({
@@ -73,24 +165,15 @@ describe('variable', () => {
   },
   nodeCode: "var i = 0, j = 1;",
   message: [
-    %60Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>%24{i}</span>%60,
-    %60Create the variable <span class='readable-variable'>j</span> and set it to <span class='readable-value'>%24{j}</span>%60
+    %60Create the variable <span class='var'>i</span> and set it to <span class='val'>%24{i}</span>%60,
+    %60Create the variable <span class='var'>j</span> and set it to <span class='val'>%24{j}</span>%60
   ],
-  range: [0, 17],
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 17
-    }
-  }
+  
+  
 });
 `
 
-    expect(r).toEqual(e);
+    expect(r).toEqual(unescape(e));
   });
 });
 
@@ -98,53 +181,38 @@ describe('ExpressionStatement', () => {
 
 
   it('increment: i++; UpdateExpression', function () {
-    const r = insertSpies(`i++;`, 'spy');
+    const r = insertSpies(`i++;`, helpfulTestOptions);
     const e =
       `i++;
 ;spy({
   
   evaluateVar: {
-i: i,
-},
+    i: i,
+  },
   nodeCode: "i++;",
-  range: [0, 4],
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 4
-    }
-  }
-});
+  message: [
+    %60increment <span class='readable-variable'>i</span> by <span class='readable-value'>1</span>%60
+  ],
+  
+  
 `
 
     expect(r).toEqual(e);
   });
 
   it('i+=1 AssignmentExpression', function () {
-    const r = insertSpies(`i+=1;`, 'spy');
+    const r = insertSpies(`i+=1;`, helpfulTestOptions);
     const e =
       `i+=1;
 ;spy({
   
   evaluateVar: {
-i: i,
-},
+    i: i,
+  },
   nodeCode: "i+=1;",
-  range: [0, 5],
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 5
-    }
-  }
+  message: %60add add <span class='readable-value'>1</span> to <span class='readable-variable'>i</span> and set <span class='readable-variable'>i</span> to <span class='readable-value'>%24{i}</span>%60
+  
+  
 });
 `
 
@@ -152,7 +220,7 @@ i: i,
   });
 
   it('i Identifier', function () {
-    const r = insertSpies(`i;`, 'spy');
+    const r = insertSpies(`i;`, helpfulTestOptions);
     const e =
       `` // somewhat correct, but I dislike it
 
@@ -165,40 +233,20 @@ describe('condition', () => {
 
 
   it('should insert spy with correct params for condition', function () {
-    const r = insertSpies(`if (true) { 1+1 }`, 'spy');
+    const r = insertSpies(`if (true) { 1+1 }`, helpfulTestOptions);
     const e =
 `if (true) {
 ;spy({
   ifConditionTest: true,
   
-  range: [0, 17],
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 17
-    }
-  }
+
 });
  1+1 } else {
 
 ;spy({
   ifConditionTest: false,
   
-  range: [0, 17],
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 17
-    }
-  }
+
 });
 
 }`
@@ -213,7 +261,7 @@ let i = 0;
 if (true) {
   i++;
 }  
-`, 'spy', node => '');
+`, helpfulTestOptions);
 
     const e =
 `
@@ -243,7 +291,7 @@ if (true) {
 } else {
   i--;
 }
-`, 'spy', node => '');
+`, helpfulTestOptions);
 
     const e =
       `
@@ -275,7 +323,7 @@ if (true) {
     i++;
   }
 }
-`, 'spy', node => '');
+`, helpfulTestOptions);
 
     const e =
       `

@@ -12,12 +12,11 @@ import {generateReadable} from '../generate-readable/generate-readable';
 
 
 
-interface HasRangeLOC {
+interface HasRange {
   range: [number, number];
-  loc: SourceLocation;
 }
 
-type EsprimaNodeWithRangeLOC = EsprimaNode & HasRangeLOC;
+type EsprimaNodeWithRange = EsprimaNode & HasRange;
 
 // function getCodeToEvaluate (eNode: EsprimaNodeWithRangeLOC, code: string): string | undefined {
 //   type AllNodeType = typeof eNode['type'];
@@ -38,8 +37,7 @@ type EsprimaNodeWithRangeLOC = EsprimaNode & HasRangeLOC;
 function createSpyString (
   originalCode: string,
   eNode: EsprimaNode,
-  spyFcName: string,
-  spyParamHook?: (e: EsprimaNode) => string,
+  options: Required<Options>,
   evaluateVar?: string[],
   ifConditionTest?: boolean, // this do not take in account if elseif else
 ): string {
@@ -49,14 +47,8 @@ function createSpyString (
   const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
   const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`;
   const nodeCode = `nodeCode: "${originalCode.substring(eNode.range![0], eNode.range![1])}",`;
-
-  const spyFirstParam = spyParamHook ? spyParamHook(eNode) : `{
-  ${ifConditionTestString}
-  ${evaluateVarString}
-  ${nodeCode}
-  message: ${"[\n    `" + generateReadable(eNode, evaluateVar, ifConditionTest).join('`,\n    `') + "`\n  ]"},
-  range: [${start}, ${end}],
-  loc: {
+  const range = !options.range ? '' : `range: [${start}, ${end}],`;
+  const loc = !options.loc ? '' : `loc: {
     "start": {
       "line": ${eNode.loc!.start.line},
       "column": ${eNode.loc!.start.column}
@@ -65,13 +57,21 @@ function createSpyString (
       "line": ${eNode.loc!.end.line},
       "column": ${eNode.loc!.end.column}
     }
-  }
+  },`;
+
+  const spyFirstParam = options.spyParamHook ? options.spyParamHook(eNode) : `{
+  ${ifConditionTestString}
+  ${evaluateVarString}
+  ${nodeCode}
+  message: ${"[\n    `" + generateReadable(eNode, options, evaluateVar, ifConditionTest).join('`,\n    `') + "`\n  ]"},
+  ${range}
+  ${loc}
 }`;
 
   // Give extra line return to make is readable
   // Give extra semi-colon, in case there is an expression without semi-colon before.
   const spyString = `
-;${spyFcName}(${spyFirstParam});
+;${options.spyFcName}(${spyFirstParam});
 `;
 
   return spyString;
@@ -86,13 +86,12 @@ function insertSpy ({code, index, offset, spyString}: {
   return code.substring(0, index + offset) + spyString + code.substring(index + offset, code.length);
 }
 
-function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, spyParamHook}: {
+function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
   originalCode: string;
   newCode: string,
-  eNode: EsprimaNodeWithRangeLOC,
+  eNode: EsprimaNodeWithRange,
   offset: number,
-  spyFcName: string,
-  spyParamHook?: (e: EsprimaNode) => string
+  options: Required<Options>,
 }): {
   // special case with if...else where there is two block statement, the offset for each is sent in order
   insertedCodeLength: number[];
@@ -106,7 +105,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, s
     ["IfStatement", (e: IfStatement) => {
       // without else
       if (!e.alternate) {
-        const spyStringOpening = createSpyString(originalCode, e, spyFcName, spyParamHook, undefined, true);
+        const spyStringOpening = createSpyString(originalCode, e, options, undefined, true);
         insertedCodeLength.push(spyStringOpening.length);
 
         // add spy right after opening curvy bracket
@@ -120,7 +119,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, s
         // `if () {} spy()`, how do you know if the test is true or false ?
         // you don't with a single if, unless you analyze what has been called previously
         // to avoid such bothersome extra work, just add an else.
-        const spyStringClosing = createSpyString(originalCode, e, spyFcName, spyParamHook, undefined, false);
+        const spyStringClosing = createSpyString(originalCode, e, options, undefined, false);
         insertedCodeLength.push(spyStringClosing.length);
 
         // add spy right after closing curvy bracket
@@ -139,7 +138,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, s
     ["VariableDeclaration", (e: VariableDeclaration) => {
       // i'm totally unsure about escodegen.generate(d.id), should work for variables, but the other things,
       // i don't know what they are.
-      const spyString = createSpyString(originalCode, e, spyFcName, spyParamHook, e.declarations.map(d => escodegen.generate(d.id)));
+      const spyString = createSpyString(originalCode, e, options, e.declarations.map(d => escodegen.generate(d.id)));
       insertedCodeLength.push(spyString.length);
 
       newCode = insertSpy({
@@ -169,7 +168,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, s
       if (getName) {
         const name = getName(e.expression);
 
-        const spyString = createSpyString(originalCode, e, spyFcName, spyParamHook, [name]);
+        const spyString = createSpyString(originalCode, e, options, [name]);
         insertedCodeLength.push(spyString.length);
 
         newCode = insertSpy({
@@ -210,8 +209,8 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, spyFcName, s
   };
 }
 
-function isHasRangeLOC(a: any): a is HasRangeLOC {
-  return !!a.range && !!a.loc;
+function isHasRange(a: any): a is HasRange {
+  return !!a.range;
 }
 
 /**
@@ -290,15 +289,39 @@ function getChildStatements(eNode: EsprimaNode): EsprimaNode[][] {
   return getChildFc ? getChildFc(eNode) : [];
 }
 
+export interface Options {
+  spyFcName?: string;
+  spyParamHook?: (e: EsprimaNode) => string;
+  range?: boolean;
+  loc?: boolean;
+  classNames?: {
+    value?: string;
+    variable?: string;
+  }
+}
 
 export function insertSpies(
   code: string,
-  spyFcName: string,
-  spyParamHook?: (e: EsprimaNode) => string,
+  options?: Options,
 ): string {
+  const defaultOptions: Options = {
+    spyFcName: 'spy',
+    spyParamHook: undefined,
+    range: true,
+    loc: true,
+    classNames: {
+      value: 'readable-value',
+      variable: 'readable-variable',
+    }
+  };
+
+  options = {...defaultOptions, ...options};
+
+  // options are just for the rendered spy code, I need range here.
+  // but loc is not needed for inserting spies
   const r = esprima.parseScript(code, {
     "range": true, // range will serve as id
-    "loc": true,
+    "loc": options.loc,
   });
 
   // copy as to not modify original
@@ -307,12 +330,12 @@ export function insertSpies(
   // Process Program separately, it doesn't need any insertion of spy
   const stack: {
     offset: number;
-    last: EsprimaNodeWithRangeLOC
+    last: EsprimaNodeWithRange
   }[] = r.body.map(e => {
     // It should have loc and range because we called parseScript with correct params.
-    if (!isHasRangeLOC(e)) {
+    if (!isHasRange(e)) {
       console.log(e);
-      throw new Error(`Have you called esprima.parseScript without range and loc param ?`);
+      throw new Error(`Have you called esprima.parseScript without range param ?`);
     }
 
     return {offset: 0, last: e};
@@ -336,8 +359,7 @@ export function insertSpies(
       newCode: codeModified,
       eNode: last,
       offset,
-      spyFcName,
-      spyParamHook,
+      options: options as Required<Options>, // a bit false, because spyParamHook can be undefined
     });
 
     // doesn't matter that we modified the code before, because we take that in account with offset.
@@ -348,7 +370,7 @@ export function insertSpies(
       ...getChildStatements(last).map(
         block => block.map((e, i) => {
           // It should have loc and range because we called parseScript with correct params.
-          if (!isHasRangeLOC(e)) {
+          if (!isHasRange(e)) {
             console.log(e);
             throw new Error(`Have you called esprima.parseScript without range and loc param ?`);
           }
