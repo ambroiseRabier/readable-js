@@ -2,12 +2,20 @@
   "name": "readable-js",
   "version": "1.0.0",
   "description": "",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "jest --silent false"
+    "test": "jest --silent false",
+    "pack": "npm pack",
+    "build": "rmdir /s /Q .\\dist && tsc",
+    "build-linux": "rm -rf ./dist && tsc"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "typescript",
+    "learning",
+    "teaching"
+  ],
+  "author": "Ambroise Rabier",
   "license": "ISC",
   "dependencies": {
     "escodegen": "^2.0.0",

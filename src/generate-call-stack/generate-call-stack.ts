@@ -35,18 +35,19 @@ export function callsToCode(code: string, calls: SpyParams[]): string[] {
   return calls.map(e => code.substring(...e.range));
 }
 
+// may need to change 'spy' name to avoid collision
+export const SPY_FC_NAME = 'spy';
+
 export function runCodeWithSpy(code: string): { calls: SpyParams[]; error: any } {
   const calls: SpyParams[] = [];
 
-  // may need to change 'spy' name to avoid collision
-  const SPY_FC_NAME = 'spy';
 
   // I could put multiple parameters, but best is to use an object for extra clarity with keys.
   const spyFc = (firstArg) => {
     calls.push(firstArg);
   };
 
-  const codeWithSpies = insertSpies(code, SPY_FC_NAME);
+  const codeWithSpies = insertSpies(code);
 
   let error: any;
 

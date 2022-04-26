@@ -15,6 +15,7 @@ import {
 import {is} from '../../enode-type-check';
 import {EsprimaNode} from '../../estree-helper';
 import {generateReadable} from '../generate-readable/generate-readable';
+import {SPY_FC_NAME} from '../generate-call-stack';
 
 
 
@@ -335,7 +336,7 @@ export function insertSpies(
   options?: Options,
 ): string {
   const defaultOptions: Options = {
-    spyFcName: 'spy',
+    spyFcName: SPY_FC_NAME,
     spyParamHook: undefined,
     range: true,
     loc: true,
