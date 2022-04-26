@@ -156,7 +156,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
       });
     }],
 
-    // can be i++; or i+=1 or 1+1
+    // can be i++; or i+=1 or 1+1 or c()
     ["ExpressionStatement", (e: ExpressionStatement) => {
       if (is.CallExpression(e.expression)) {
         const fcName = escodegen.generate(e.expression.callee);
@@ -326,6 +326,7 @@ export interface Options {
   classNames?: {
     value?: string;
     variable?: string;
+    expression?: string;
   }
 }
 
@@ -341,6 +342,7 @@ export function insertSpies(
     classNames: {
       value: 'readable-value',
       variable: 'readable-variable',
+      expression: 'readable-expression',
     }
   };
 

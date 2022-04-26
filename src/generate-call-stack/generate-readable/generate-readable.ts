@@ -2,13 +2,14 @@ import {EsprimaNode} from '../../estree-helper';
 import {is, isPattern} from '../../enode-type-check';
 import {
   AssignmentExpression,
-  AssignmentOperator,
+  AssignmentOperator, CallExpression,
   Expression,
   ExpressionStatement,
-  IfStatement,
+  IfStatement, ObjectExpression, UpdateExpression,
   VariableDeclaration
 } from 'estree';
 import {Options} from '../insert-spies/insert-spies';
+import * as escodegen from 'escodegen';
 
 const ge = generateReadableExpression;
 
@@ -36,12 +37,12 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
 
         let createMessage = '';
         if (isPattern.Identifier(dec.id)) {
-          createMessage = `Create the ${varToName.get(e.kind)} <span class='${options.classNames.variable}'>${dec.id.name}</span>`;
+          createMessage = `Create the ${varToName.get(e.kind)} <span class="${options.classNames.variable}">${dec.id.name}</span>`;
         }
 
         let initMessage = '';
         if (!!dec.init) {
-          initMessage = ` and set it to <span class='${options.classNames.value}'>${"${"+evaluateVar[i]+"}"}</span>`;
+          initMessage = ` and set it to <span class="${options.classNames.value}">${"${"+evaluateVar[i]+"}"}</span>`;
         }
 
         let message = createMessage + initMessage;
@@ -60,12 +61,44 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
     }],
 
     ["ExpressionStatement", (e: ExpressionStatement) => {
-      if (is.CallExpression(e.expression)) {
-        return [
-          `Call function ${evaluateVar![0]}`
-        ];
-      }
-      return [''];
+      const m2 = new Map<
+        ExpressionStatement['expression']['type'],
+        (exp: Expression|any) => string[]
+        >([
+        ['CallExpression', (exp: CallExpression) => [`Call function ${evaluateVar![0]}`]],
+        ['UpdateExpression', (exp: UpdateExpression) => [
+          `Increment <span class="${options.classNames.variable}">${evaluateVar![0]}</span> by <span class="${options.classNames.value}">1</span>`
+        ]],
+        ['AssignmentExpression', (exp: AssignmentExpression) => {
+          const varValue = `<span class="${options.classNames.value}">` + "${"+evaluateVar![0]+"}" + "</span>";
+          const varName = `<span class="${options.classNames.variable}">${evaluateVar![0]}</span>`;
+          const right = `<span class="${options.classNames.expression}">${escodegen.generate(exp.right)}</span>`;
+          const mapAssignmentExp = new Map<AssignmentOperator, (a: AssignmentExpression) => string>([
+            ['=', (a: AssignmentExpression) => `set ${varName} to ${varValue}`],
+            ['+=', (a: AssignmentExpression) => `add ${right} to ${varName} and set ${varName} to ${varValue}`],
+            ['-=', (a: AssignmentExpression) => `subtract ${right} from ${varName} and set ${varName} to ${varValue}`],
+            ['*=', (a: AssignmentExpression) => `multiply ${varName} by ${right} and set ${varName} to ${varValue}`],
+            ['/=', (a: AssignmentExpression) => `divide ${varName} by ${right} and set ${varName} to ${varValue}`],
+            ['%=', (a: AssignmentExpression) => `divide ${varName} by ${right} and set ${varName} to the remainder:  ${varValue}`],
+            ['**=', (a: AssignmentExpression) => ``],
+            ['<<=', (a: AssignmentExpression) => ``],
+            ['>>=', (a: AssignmentExpression) => ``],
+            ['>>>=', (a: AssignmentExpression) => ``],
+            ['|=', (a: AssignmentExpression) => ``],
+            ['^=', (a: AssignmentExpression) => ``],
+            ['&=', (a: AssignmentExpression) => ``],
+          ]);
+
+          const mapAssignmentExpGet = mapAssignmentExp.get(exp.operator);
+
+          return mapAssignmentExpGet ? [mapAssignmentExpGet(exp)] : [''];
+        }]
+      ]);
+
+      const m2Get = m2.get(e.expression.type);
+
+
+      return m2Get ? m2Get(e.expression) : [''];
     }]
   ]);
 

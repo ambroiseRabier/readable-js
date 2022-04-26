@@ -7,7 +7,8 @@ const helpfulTestOptions: Options = {
   loc: false,
   classNames: {
     value: 'val',
-    variable: 'var'
+    variable: 'var',
+    expression: 'exp',
   },
 };
 
@@ -212,30 +213,29 @@ describe('ExpressionStatement', () => {
         },
         nodeCode: \`i++;\`,
         message: [
-          \`increment <span class='readable-variable'>i</span> by <span class='readable-value'>1</span>\`
+          \`Increment <span class="var">i</span> by <span class="val">1</span>\`
         ],
       });
     `);
   });
 
   it('i+=1 AssignmentExpression', function () {
-    expectCodeToSpies(`i+=1;`, `
-      i+=1;
-      ;spy({
+    expectCodeToSpies(`i+=1;`, `i += 1;
+      spy({
         evaluateVar: {
           i: i,
         },
-        nodeCode: "i+=1;",
+        nodeCode: \`i+=1;\`,
         message: [
-          \`add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>\${i}</span>\`
+          \`add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
         ],
       });
     `);
   });
 
   it('i = i + 1 AssignmentExpression', function () {
-    expectCodeToSpies(`i+=1;`, `
-      i+=1;
+    expectCodeToSpies(`i = i + 1`, `
+      i = i + 1;
       ;spy({
         
         evaluateVar: {
@@ -254,11 +254,9 @@ describe('ExpressionStatement', () => {
   it('i Identifier', function () {
     expectCodeToSpies(`i;`, `
       i;
-      ;spy({
-        nodeCode: "i;",
-        message: [
-          \`\`
-        ],
+      spy({
+        nodeCode: \`i;\`,
+        message: [\`\`],
       });
     `);
   });
