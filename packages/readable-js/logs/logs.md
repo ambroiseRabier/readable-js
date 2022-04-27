@@ -648,3 +648,14 @@ Can also use // language=js from webstorm.
 I thought it didn't worked so I use escaped version %60, but it actually worked.
 %60 cannot be parsed as js by webstorm. I like the reformat of webstorm, help
 reading the expected code.
+
+---
+
+26 april 2022
+
+dont use commonJs if you target browser, that's for node, noob. Lost 2h on that, and also because I use rollup and workspace and didn't
+know where the bug came from.
+
+---
+
+plus ds log dans learning-programming/ ... logs

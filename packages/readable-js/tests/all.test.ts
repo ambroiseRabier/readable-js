@@ -1,5 +1,6 @@
 import {ReadableJS} from '../src';
 import * as esprima from 'esprima';
+import {Directive, ModuleDeclaration, Statement} from 'estree';
 
 /*
 Note: If some test doesn't pass, put it inside another test case, so that you can read the console.log.
@@ -135,3 +136,11 @@ it('FunctionDeclaration', function () {
 
 
 
+// COULD BE USEFUL FOR TESTS ? util install as dev package though
+// Has to reconsider if that is useful
+// function someLog(node: Directive | Statement | ModuleDeclaration) {
+//   const a = util.inspect(node, { depth: 100, colors: true });
+//
+//   // will log into all.test.ts when running jest (on webstorm)
+//   console.log(a);
+// }

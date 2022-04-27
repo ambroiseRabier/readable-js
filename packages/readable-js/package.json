@@ -1,6 +1,6 @@
 {
-  "name": "readable-js",
-  "version": "1.0.0",
+  "name": "@readable-js/core",
+  "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,14 @@
     "pack": "npm pack",
     "build": "rmdir /s /Q .\\dist && tsc",
     "build-linux": "rm -rf ./dist && tsc"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/readable-js"
   },
   "keywords": [
     "typescript",
@@ -19,8 +27,7 @@
   "license": "ISC",
   "dependencies": {
     "escodegen": "^2.0.0",
-    "esprima": "^4.0.1",
-    "util": "^0.12.4"
+    "esprima": "^4.0.1"
   },
   "devDependencies": {
     "@types/escodegen": "0.0.7",

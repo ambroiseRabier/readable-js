@@ -13,14 +13,13 @@ import {insertSpies} from './insert-spies/insert-spies';
  * position of the code.
  * @param code
  */
-export function generateCallStack(code: string): { calls: { loc: SourceLocation; code: string; range: [number, number] }[]; error: any } {
+export function generateCallStack(code: string): { calls: { loc: SourceLocation; range: [number, number] }[]; error: any } {
   const r = runCodeWithSpy(code);
 
   return {
     error: r.error,
     calls: r.calls.map(e => ({
       ...e,
-      code: code.substring(...e.range)
     })),
   };
 }

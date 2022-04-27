@@ -9,19 +9,11 @@ import {
   WhileStatement,
   FunctionDeclaration
 } from 'estree';
-import util from 'util';
 import {ENode} from './estree-helper';
 import {isPattern} from './enode-type-check';
 import {generateReadableExpression} from './generateReadableExpression';
 
 
-// Has to reconsider if that is useful
-function someLog(node: Directive | Statement | ModuleDeclaration) {
-  const a = util.inspect(node, { depth: 100, colors: true });
-
-  // will log into all.test.ts when running jest (on webstorm)
-  console.log(a);
-}
 
 export interface Message {
   lineNumber?: number;
@@ -113,9 +105,6 @@ export interface ParseNodeOptions {
 // This would be nice to make it public, parsing only the current node
 // would be more performant.
 export function parseNode(node: ENode, options?: ParseNodeOptions): Message[] {
-  // equivalent to pp
-  someLog(node);
-
   if (!isKey(node.type)) {
     throw new Error('Missing node parser');
   }
