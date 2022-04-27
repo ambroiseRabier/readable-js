@@ -2,6 +2,7 @@ import {EditorView, Decoration} from "@codemirror/view"
 import {syntaxTree} from "@codemirror/language"
 import {CheckboxWidget} from './checkbox-widget';
 import {generateCallStack} from '@readable-js/core';
+import {RangeSetBuilder} from "@codemirror/state"
 
 export function checkboxes(view: EditorView, currentStep?: number) {
   let widgets = []
@@ -30,6 +31,16 @@ export function checkboxes(view: EditorView, currentStep?: number) {
     // for (let i = 0; i < calls.length; i++) {
       const lineStart = calls[currentStep].loc.start.line;
       const rangeEnd = calls[currentStep].range[1];
+
+      const decoLine = Decoration.line({
+        attributes: {class: 'readable-highlight'}
+      });
+
+      let line = view.state.doc.lineAt(lineStart)
+      widgets.push(
+        decoLine.range(calls[currentStep].range[0])
+      );
+
 
       let deco = Decoration.widget({
         widget: new CheckboxWidget(calls[currentStep].message),
