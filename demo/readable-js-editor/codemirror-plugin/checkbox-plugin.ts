@@ -15,16 +15,17 @@ function toggleBoolean(view: EditorView, pos: number) {
   return true
 }
 
-export const checkboxPlugin = ViewPlugin.fromClass(class {
+export const checkboxPlugin = (currentStep?: number) => ViewPlugin.fromClass(class {
   decorations: DecorationSet
 
   constructor(view: EditorView) {
-    this.decorations = checkboxes(view)
+    this.decorations = checkboxes(view, currentStep)
   }
 
   update(update: ViewUpdate) {
-    if (update.docChanged || update.viewportChanged)
-      this.decorations = checkboxes(update.view);
+    if (update.docChanged || update.viewportChanged){
+      this.decorations = checkboxes(update.view, currentStep);
+    }
   }
 }, {
   decorations: v => v.decorations,
