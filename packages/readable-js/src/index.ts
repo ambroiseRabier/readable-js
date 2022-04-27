@@ -5,11 +5,11 @@ import {Program} from 'esprima';
 import {executeEvaluateVar} from './execute-evaluate-var/execute-evaluate-var';
 import {getPreviousCode, getPreviousCodeIncluded} from './get-previous-code/get-previous-code';
 import {executeEvaluateExpression} from './execute-evaluate-expression/execute-evaluate-expression';
-// import {generateCallStack} from './generate-call-stack/generate-call-stack';
+import {generateCallStack} from './generate-call-stack/generate-call-stack';
 
-// export {
-//   generateCallStack
-// }
+export {
+  generateCallStack
+}
 
 
 export class ReadableJS {
