@@ -1,18 +1,18 @@
 import {WidgetType} from "@codemirror/view";
 
-export class CheckboxWidget extends WidgetType {
+export class ReadableWidget extends WidgetType {
   constructor(readonly message: string) {
     super();
   }
 
-  eq(other: CheckboxWidget) {
+  eq(other: ReadableWidget) {
     return other.message == this.message;
   }
 
   toDOM() {
     let wrap = document.createElement("span");
     wrap.setAttribute("aria-hidden", "true");
-    wrap.className = "cm-boolean-toggle";
+    wrap.className = "cm-readable-js-message";
     wrap.innerHTML = this.message;
 
     return wrap;

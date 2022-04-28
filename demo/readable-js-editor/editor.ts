@@ -3,16 +3,16 @@ import {javascript} from "@codemirror/lang-javascript";
 
 // with workspaces, this import will use our local package ! (dist folder)
 import {ReadableJS, generateCallStack} from "@readable-js/core";
-import {checkboxPlugin} from './codemirror-plugin/checkbox-plugin';
+import {readablePlugin} from './codemirror-plugin/readable-plugin';
 import {ViewUpdate, } from '@codemirror/view';
 import {Extension, Compartment} from "@codemirror/state"
 
-let currentCallStack = [];
 
-const one = checkboxPlugin();
+const one = readablePlugin(() => callStack, 0);
 const j = new Compartment()
 const k = j.of([one])
 
+let callStack = [];
 
 let editor = new EditorView({
   state: EditorState.create({
@@ -20,8 +20,11 @@ let editor = new EditorView({
       k,
       basicSetup,
       javascript(),
+
+      // seem to be called before the plugin, all good ?
       EditorView.updateListener.of((v: ViewUpdate) => {
         if (v.docChanged) {
+          callStack = stateToCallStack(v.state);
           console.log('change here')
           // Document changed
         }
@@ -57,23 +60,10 @@ $range.addEventListener('input', (e: any) => {
   console.log(e.target.value);
   console.log(e);
 
+  // The only way to tell the plugin to update, because external data has changed ?
   editor.dispatch({
-    effects: j.reconfigure([checkboxPlugin(e.target.value)])
+    effects: j.reconfigure([readablePlugin(() => callStack, e.target.value)])
   });
-
-  // this could work with a timeout of 0 between each. To force update.
-  // editor.dispatch(
-  //   {
-  //     changes: {from: editor.state.doc.length, to: editor.state.doc.length, insert: "n"},
-  //     sequential: true,
-  //   },
-  //   {
-  //     // editor.state.doc.length is stale data at this point, so we increment both by +1
-  //     // Note: this change alone, would have from be `editor.state.doc.length -1`
-  //     changes: {from: editor.state.doc.length, to: editor.state.doc.length+1, insert: ""},
-  //     sequential: true,
-  //   },
-  // )
 });
 
 

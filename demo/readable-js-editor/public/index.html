@@ -2,8 +2,14 @@
 <head title="Demo readable-js with CodeMirror">
   <meta charset=utf8>
   <style>
-    .readable-highlight {
-      background: red;
+    .cm-readable-js-highlight {
+      /* when cursor is on the line, there is cm-activeLine color, override it.*/
+      background: #ff990042!important;
+    }
+
+    .cm-readable-js-message {
+      float: right;
+      color: #6a6a6a;
     }
   </style>
 </head>
