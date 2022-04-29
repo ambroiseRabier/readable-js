@@ -3,20 +3,30 @@
   <meta charset=utf8>
   <style>
     .cm-readable-js-highlight {
-      /* when cursor is on the line, there is cm-activeLine color, override it.*/
+      /* When cursor is on the line, there is cm-activeLine color, override it. */
       background: #ff990042!important;
     }
 
     .cm-readable-js-message {
-      float: right;
+      float: right; /* This will break on long line, no fix found right now. */
       color: #6a6a6a;
+    }
+
+    .readable-value, .readable-variable {
+      color: #524040;
+      font-weight: bold;
     }
   </style>
 </head>
 <h1>Demo readable-js with CodeMirror</h1>
 
-<div class="slidecontainer">
+<div class="slide-container">
+  <div>
+    Current step: <span class="current-value"></span>
+  </div>
+  <span class="min-value"></span>
   <input type="range" min="0" max="10" value="0" class="slider" id="myRange">
+  <span class="max-value"></span>
 </div>
 
 <script src="editor.bundle.js"></script>

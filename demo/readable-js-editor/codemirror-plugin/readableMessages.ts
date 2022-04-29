@@ -17,23 +17,36 @@ export function readableMessages(view: EditorView, getCallStack: () => any, curr
   // for the same line
   if (calls && calls.length > 0) {
     console.log(calls);
-    const lineStart = calls[currentStep].loc.start.line;
+    // const lineStart = calls[currentStep].loc.start.line;
     const rangeEnd = calls[currentStep].range[1];
 
-    const decoLine = Decoration.line({
+    const decoColor = Decoration.line({
       attributes: {class: 'cm-readable-js-highlight'}
     });
 
-    widgets.push(
-      decoLine.range(calls[currentStep].range[0])
-    );
+    console.log(calls[currentStep].range[0]);
 
-    let deco = Decoration.widget({
+
+    // decoLine need the range starting from the start of the line (no indentation or other)
+    let lineRangeStart = view.state.doc.lineAt(calls[currentStep].range[0]);
+    let lineRangeEnd = view.state.doc.lineAt(calls[currentStep].range[1]);
+
+    // if one instruction take multiple line, we want all the line to be colored
+    // otherwise we could just do decoColor.range(lineRangeStart.from)
+    for (let i = lineRangeStart.number; i <= lineRangeEnd.number; i++) {
+      widgets.push(
+        decoColor.range(view.state.doc.line(i).from)
+      );
+    }
+
+    let decoText = Decoration.widget({
       widget: new ReadableWidget(calls[currentStep].message),
       side: 1
     });
 
-    widgets.push(deco.range(rangeEnd));
+    widgets.push(
+      decoText.range(lineRangeEnd.to)
+    );
   }
 
   return Decoration.set(widgets)

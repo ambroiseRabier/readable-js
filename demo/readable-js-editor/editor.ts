@@ -8,11 +8,40 @@ import {ViewUpdate, } from '@codemirror/view';
 import {Extension, Compartment} from "@codemirror/state"
 
 
+const $range: HTMLInputElement = document.querySelector('#myRange');
+const $minValue: HTMLSpanElement = document.querySelector('.slide-container .min-value');
+const $maxValue: HTMLSpanElement = document.querySelector('.slide-container .max-value');
+const $currentValue: HTMLSpanElement = document.querySelector('.slide-container .current-value');
+
 const one = readablePlugin(() => callStack, 0);
 const j = new Compartment()
 const k = j.of([one])
 
 let callStack = [];
+
+const initialCode = `var i = 0;
+i++;
+
+function b () {
+  i++;
+}
+b
+  ();
+  i++;`;
+
+let error = false;
+
+try {
+  callStack = generateCallStack(initialCode).calls as any;
+} catch (e) {
+  // Syntax errors not yet handled
+  console.warn(e);
+  error = true;
+}
+
+if (!error) {
+  updateSlider(callStack.length);
+}
 
 let editor = new EditorView({
   state: EditorState.create({
@@ -21,44 +50,30 @@ let editor = new EditorView({
       basicSetup,
       javascript(),
 
+      // need to call this code at startup
       // seem to be called before the plugin, all good ?
       EditorView.updateListener.of((v: ViewUpdate) => {
         if (v.docChanged) {
-          callStack = stateToCallStack(v.state);
-          console.log('change here')
-          // Document changed
+          const s = stateToCallStack(v.state);
+          callStack = s.calls;
+
+          if (!s.error) {
+            updateSlider(callStack.length);
+          }
         }
       }),
     ],
+    doc: initialCode
   }),
   parent: document.body,
   dispatch: (...e) => {
+    console.log('dispatch');
     editor.update(e);
-
-    // strange, typing is wrong ?
-    // @ts-ignore
-    // const code = editor.state.doc.text.join('\n');
-
-    // let calls;
-    //
-    // try {
-    //   calls = generateCallStack(code).calls;
-    // } catch (e) {
-    //   // Syntax errors not yet handled
-    //   // console.warn(e);
-    // }
-
-    // console.log(
-    //   calls
-    // );
   },
 });
 
-const $range: HTMLInputElement = document.querySelector('#myRange');
-
 $range.addEventListener('input', (e: any) => {
-  console.log(e.target.value);
-  console.log(e);
+  $currentValue.innerText = (parseInt(e.target.value)+1) + '';
 
   // The only way to tell the plugin to update, because external data has changed ?
   editor.dispatch({
@@ -66,6 +81,14 @@ $range.addEventListener('input', (e: any) => {
   });
 });
 
+function updateSlider(length: number) {
+  $range.setAttribute('min', '0');
+  $range.setAttribute('max', (length-1) + '');
+  $range.setAttribute('value', Math.min(parseInt($range.value), length-1) + '');
+  $minValue.innerText = '1';
+  $maxValue.innerText = length + '';
+  $currentValue.innerText = (Math.min(parseInt($range.value), length-1) + 1) + '';
+}
 
 const stateToCallStack = (state: EditorState) => {
   // that won't be performant on large files, but that is not the purpose of readable-js
@@ -81,20 +104,19 @@ const stateToCallStack = (state: EditorState) => {
     message: string;
   }[];
 
+  let error = false;
+
   try {
     calls = generateCallStack(code).calls as any;
   } catch (e) {
     // Syntax errors not yet handled
     console.warn(e);
+    error = true;
   }
 
-  return calls ?? [];
+  return {
+    error: error,
+    calls: calls ?? [],
+  };
 };
-
-
-
-console.log(ReadableJS);
-
-
-
 
