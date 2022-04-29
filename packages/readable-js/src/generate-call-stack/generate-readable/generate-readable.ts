@@ -5,7 +5,7 @@ import {
   AssignmentOperator, CallExpression,
   Expression,
   ExpressionStatement,
-  IfStatement, ObjectExpression, UpdateExpression,
+  IfStatement, ObjectExpression, SourceLocation, UpdateExpression,
   VariableDeclaration
 } from 'estree';
 import {Options} from '../insert-spies/insert-spies';
@@ -19,8 +19,14 @@ function generateReadableExpression(e: Expression) {
   ]);
 }
 
-export function generateReadable(eNode: EsprimaNode, options: Required<Options>, evaluateVar?: string[], ifConditionTest?: boolean): string[] {
-  const m = new Map<EsprimaNode['type'], (e: EsprimaNode|any) => string[]>([
+type MessageWithLines = [lineStart: number, lineEnd: number, message: string];
+
+export function generateReadable(eNode: EsprimaNode, options: Required<Options>, evaluateVar?: string[], ifConditionTest?: boolean): MessageWithLines[] {
+  function helperLOC (loc: SourceLocation): [lineStart: number, lineEnd: number] {
+    return [loc.start.line, loc.end.line];
+  }
+
+  const m = new Map<EsprimaNode['type'], (e: EsprimaNode|any) => ReturnType<typeof generateReadable>>([
 
     // return multiple message, one for each variable declaration
     ["VariableDeclaration", (e: VariableDeclaration) => {
@@ -28,7 +34,7 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
         throw new Error('Unexpected case: evaluateVar undefined in generateReadable VariableDeclaration parser.');
       }
 
-      const messages = e.declarations.map((dec, i) => {
+      const messages: MessageWithLines[] = e.declarations.map((dec, i) => {
         const varToName = new Map([
           ['let', 'variable'],
           ['var', 'variable'],
@@ -47,7 +53,7 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
 
         let message = createMessage + initMessage;
 
-        return message;
+        return [...helperLOC(dec.loc!), message];
       });
 
 
@@ -56,23 +62,30 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
 
     ["IfStatement", (e: IfStatement) => {
       return [
-        `${ifConditionTest ? 'Because' : 'Skip because'}`
+        [
+          e.loc!.start.line,
+          e.test.loc!.end.line,
+          `${ifConditionTest ? 'Because' : 'Skip because'}`,
+        ],
       ];
     }],
 
     ["ExpressionStatement", (e: ExpressionStatement) => {
+
       const m2 = new Map<
         ExpressionStatement['expression']['type'],
-        (exp: Expression|any) => string[]
+        (exp: Expression|any) => MessageWithLines
         >([
-        ['CallExpression', (exp: CallExpression) => [`Call function ${evaluateVar![0]}`]],
+        ['CallExpression', (exp: CallExpression) => [...helperLOC(exp.loc!), `Call function ${evaluateVar![0]}`]],
         ['UpdateExpression', (exp: UpdateExpression) => [
+          ...helperLOC(exp.loc!),
           `Increment <span class="${options.classNames.variable}">${evaluateVar![0]}</span> by <span class="${options.classNames.value}">1</span>`
         ]],
         ['AssignmentExpression', (exp: AssignmentExpression) => {
           const varValue = `<span class="${options.classNames.value}">` + "${"+evaluateVar![0]+"}" + "</span>";
           const varName = `<span class="${options.classNames.variable}">${evaluateVar![0]}</span>`;
           const right = `<span class="${options.classNames.expression}">${escodegen.generate(exp.right)}</span>`;
+
           const mapAssignmentExp = new Map<AssignmentOperator, (a: AssignmentExpression) => string>([
             ['=', (a: AssignmentExpression) => `set ${varName} to ${varValue}`],
             ['+=', (a: AssignmentExpression) => `add ${right} to ${varName} and set ${varName} to ${varValue}`],
@@ -91,14 +104,14 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
 
           const mapAssignmentExpGet = mapAssignmentExp.get(exp.operator);
 
-          return mapAssignmentExpGet ? [mapAssignmentExpGet(exp)] : [''];
+          return [...helperLOC(exp.loc!), mapAssignmentExpGet ? mapAssignmentExpGet(exp) : ''];
         }]
       ]);
 
       const m2Get = m2.get(e.expression.type);
 
 
-      return m2Get ? m2Get(e.expression) : [''];
+      return [m2Get ? m2Get(e.expression) : [...helperLOC(e.loc!), '']];
     }]
   ]);
 
@@ -108,6 +121,6 @@ export function generateReadable(eNode: EsprimaNode, options: Required<Options>,
     return parser(eNode);
   } else {
     console.warn(`No readable generated for type ${eNode.type}.`)
-    return [''];
+    return [];
   }
 }

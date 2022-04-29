@@ -50,12 +50,11 @@ function createSpyString (
 ): string {
   const [start, end] = eNode.range!;
 
-
-  const evaluateVarString = !evaluateVar ? '' : `evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
-  const ifConditionTestString = ifConditionTest === undefined ? '' : `ifConditionTest: ${ifConditionTest},`;
-  const nodeCode = unescape(`nodeCode: %60${originalCode.substring(eNode.range![0], eNode.range![1])}%60,`); // %60 == `
-  const range = !options.range ? '' : `range: [${start}, ${end}],`;
-  const loc = !options.loc ? '' : `loc: {
+  const evaluateVarString = !evaluateVar ? '' : `\n  evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
+  const ifConditionTestString = ifConditionTest === undefined ? '' : `\n  ifConditionTest: ${ifConditionTest},`;
+  const nodeCode = unescape(`\n  nodeCode: %60${originalCode.substring(eNode.range![0], eNode.range![1])}%60,`); // %60 == `
+  const range = !options.range ? '' : `\n  range: [${start}, ${end}],`;
+  const loc = !options.loc ? '' : `\n  loc: {
     "start": {
       "line": ${eNode.loc!.start.line},
       "column": ${eNode.loc!.start.column}
@@ -65,15 +64,11 @@ function createSpyString (
       "column": ${eNode.loc!.end.column}
     }
   },`;
+  const messages = `\n  messages: [\n    ${generateReadable(eNode, options, evaluateVar, ifConditionTest).join(',\n    ')},\n  ],`;
 
-  const spyFirstParam = options.spyParamHook ? options.spyParamHook(eNode) : `{
-  ${ifConditionTestString}
-  ${evaluateVarString}
-  ${nodeCode}
-  message: ${"[\n    `" + generateReadable(eNode, options, evaluateVar, ifConditionTest).join('`,\n    `') + "`\n  ]"},
-  ${range}
-  ${loc}
-}`;
+  const assembled = ifConditionTestString + evaluateVarString + nodeCode + messages + range + loc + '\n';
+
+  const spyFirstParam = options.spyParamHook ? options.spyParamHook(eNode) : `{${assembled}}`;
 
   // Give extra line return to make is readable
   // Give extra semi-colon, in case there is an expression without semi-colon before.
