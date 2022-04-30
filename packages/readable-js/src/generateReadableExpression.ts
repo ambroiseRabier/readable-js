@@ -13,8 +13,11 @@ import {
 } from 'estree';
 import {is} from './enode-type-check';
 import {ExpressionWithProperty} from './estree-helper';
-import {ParseNodeOptions} from './parseNode';
 
+
+export interface ParseNodeOptions {
+  replaceVar?: boolean;
+}
 // not suer this work, maybe it can be refactored
 // need to evaluate value at some point..
 function generateReadableValue(left?: Expression | Pattern, right?: Expression | Pattern, options?: ParseNodeOptions) {

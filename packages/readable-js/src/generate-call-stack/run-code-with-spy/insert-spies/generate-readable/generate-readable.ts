@@ -1,5 +1,5 @@
-import {EsprimaNode} from '../../estree-helper';
-import {is, isPattern} from '../../enode-type-check';
+import {EsprimaNode} from '../../../../estree-helper';
+import {is, isPattern} from '../../../../enode-type-check';
 import {
   AssignmentExpression,
   AssignmentOperator, CallExpression,
@@ -8,7 +8,7 @@ import {
   IfStatement, ObjectExpression, SourceLocation, UpdateExpression,
   VariableDeclaration
 } from 'estree';
-import {Options} from '../insert-spies/insert-spies';
+import {Options} from '../insert-spies';
 import * as escodegen from 'escodegen';
 
 const ge = generateReadableExpression;

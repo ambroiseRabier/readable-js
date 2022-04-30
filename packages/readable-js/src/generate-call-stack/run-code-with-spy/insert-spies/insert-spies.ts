@@ -12,10 +12,10 @@ import {
   UpdateExpression,
   VariableDeclaration
 } from 'estree';
-import {is} from '../../enode-type-check';
-import {EsprimaNode} from '../../estree-helper';
-import {generateReadable, MessageWithLines} from '../generate-readable/generate-readable';
-import {SPY_FC_NAME} from '../generate-call-stack';
+import {is} from '../../../enode-type-check';
+import {EsprimaNode} from '../../../estree-helper';
+import {generateReadable, MessageWithLines} from './generate-readable/generate-readable';
+import {SPY_FC_NAME} from '../run-code-with-spy';
 
 
 interface HasRange {

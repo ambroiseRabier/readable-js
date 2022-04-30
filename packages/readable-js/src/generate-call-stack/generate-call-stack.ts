@@ -1,8 +1,8 @@
 /**
  * EXECUTE THE CODE.
  */
-import {DefaultSpyParams} from './insert-spies/insert-spies';
-import {runCodeWithSpy} from './run-code-with-spy';
+import {DefaultSpyParams} from './run-code-with-spy/insert-spies/insert-spies';
+import {runCodeWithSpy} from './run-code-with-spy/run-code-with-spy';
 
 /**
  * Run the code, return the callstack with information from esprima about

@@ -1,4 +1,5 @@
 import {generateReadable} from './generate-readable';
+import {Options} from '../insert-spies';
 
 it('return string prepared to become template string', function () {
   const eNode = {
@@ -77,10 +78,28 @@ it('return string prepared to become template string', function () {
   };
 
   expect(
-    generateReadable(eNode as any, ["i"])
+    generateReadable(
+      eNode as any,
+      {
+      spyFcName: 'spy',
+      spyParamHook: undefined,
+      range: true,
+      loc: true,
+      classNames: {
+        value: 'readable-value',
+        variable: 'readable-variable',
+        expression: 'readable-expression',
+      }
+    } as any as Required<Options>,
+      ["i"]
+    )
   ).toEqual(
     [
-      "Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>${i}</span>"
+      [
+        1,
+        1,
+        "Create the variable <span class=\"readable-variable\">i</span> and set it to <span class=\"readable-value\">${i}</span>"
+      ]
     ]
   );
 });
