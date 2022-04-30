@@ -19,7 +19,7 @@ function generateReadableExpression(e: Expression) {
   ]);
 }
 
-type MessageWithLines = [lineStart: number, lineEnd: number, message: string];
+export type MessageWithLines = [lineStart: number, lineEnd: number, message: string];
 
 export function generateReadable(eNode: EsprimaNode, options: Required<Options>, evaluateVar?: string[], ifConditionTest?: boolean): MessageWithLines[] {
   function helperLOC (loc: SourceLocation): [lineStart: number, lineEnd: number] {

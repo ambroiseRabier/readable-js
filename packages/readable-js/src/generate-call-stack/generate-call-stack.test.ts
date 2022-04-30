@@ -1,14 +1,30 @@
-import {callsToCode, runCodeWithSpy} from './generate-call-stack';
+import {generateCallStack} from './generate-call-stack';
 
-it('give calls', function () {
-  const r = runCodeWithSpy(`
+
+it('generateCallStack error handled', function () {
+  const r = generateCallStack(`
     var i = 0;
-    var j = 1;
+    var !j = 1;
+  `);
+
+  expect(r.error).toEqual({
+    "description": "Unexpected token !",
+    "index": 24,
+    "lineNumber": 3
+  });
+});
+
+it('generateCallStack run normaly', function () {
+  const r = generateCallStack(`
+    var i = 0;
   `);
 
   expect(r).toEqual({
     "calls": [
       {
+        "evaluateVar": {
+          "i": 0
+        },
         "loc": {
           "end": {
             "column": 14,
@@ -19,95 +35,19 @@ it('give calls', function () {
             "line": 2
           }
         },
+        "messages": [
+          [
+            2,
+            2,
+            "Create the variable <span class=\"readable-variable\">i</span> and set it to <span class=\"readable-value\">0</span>"
+          ]
+        ],
+        "nodeCode": "var i = 0;",
         "range": [
           5,
           15
-        ]
-      },
-      {
-        "loc": {
-          "end": {
-            "column": 8,
-            "line": 3
-          },
-          "start": {
-            "column": 4,
-            "line": 3
-          }
-        },
-        "range": [
-          20,
-          24
         ]
       }
     ]
   });
 });
-
-/**
- * try {
- *    Function('con!sole.log(a)')()
- * } catch (e) {console.log(e); }
- *
- * work. but mine doesn't work ? An issue with jest only maybe ?
- */
-// it('give errors', function () {
-//   const r = runCodeWithSpy(`
-//     var !i = 0
-//     i++;
-//   `);
-//
-//   expect(r).toEqual({
-//     "calls": 2  });
-// })
-
-
-it('callsToCode', function () {
-  const code = `
-    var i = 0;
-    i++;
-  `;
-  const r = runCodeWithSpy(code);
-
-  expect(callsToCode(code, r.calls)).toEqual([
-    "var i = 0;",
-    "i++;"
-  ]);
-});
-
-
-function assertCode(code, expectation) {
-  const r = runCodeWithSpy(code);
-
-  expect(
-    callsToCode(code, r.calls)
-  ).toEqual(
-    expectation
-  );
-}
-
-describe('if', () => {
-  it('true condition', function () {
-    assertCode(`
-    var i = 0;
-    if (true) { i--; }
-  `, [
-      "var i = 0;",
-      "if (true) { i--; }",
-      "i--;",
-    ]);
-
-  });
-
-  it('false condition', function () {
-    assertCode(`
-    var i = 0;
-    if (false) { i--; }
-  `, [
-      "var i = 0;",
-      "if (false) { i--; }",
-    ]);
-  });
-});
-
-

@@ -1,22 +1,21 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 import {
-  Expression,
-  UpdateExpression,
-  ExpressionStatement,
-  IfStatement,
-  VariableDeclaration,
   AssignmentExpression,
-  Identifier,
-  Pattern,
+  Expression,
+  ExpressionStatement,
   FunctionDeclaration,
-  CallExpression
+  Identifier,
+  IfStatement,
+  Pattern,
+  SourceLocation,
+  UpdateExpression,
+  VariableDeclaration
 } from 'estree';
 import {is} from '../../enode-type-check';
 import {EsprimaNode} from '../../estree-helper';
-import {generateReadable} from '../generate-readable/generate-readable';
+import {generateReadable, MessageWithLines} from '../generate-readable/generate-readable';
 import {SPY_FC_NAME} from '../generate-call-stack';
-
 
 
 interface HasRange {
@@ -39,6 +38,18 @@ type EsprimaNodeWithRange = EsprimaNode & HasRange;
 //
 //   return fc ? fc(eNode as any) : undefined;
 // }
+
+/**
+ * This object is created for each call of the spy function.
+ */
+export interface DefaultSpyParams {
+  evaluateVar?: boolean;
+  ifConditionTest?: boolean;
+  nodeCode: string;
+  range: [start: number, end: number];
+  loc: SourceLocation;
+  messages: MessageWithLines[];
+}
 
 // note: the node code could be found ulteriorly using range, but I find it more user friendly this way.
 function createSpyString (
@@ -64,7 +75,8 @@ function createSpyString (
       "column": ${eNode.loc!.end.column}
     }
   },`;
-  const messages = `\n  messages: [\n    ${generateReadable(eNode, options, evaluateVar, ifConditionTest).join(',\n    ')},\n  ],`;
+  const formatMessage = (e: MessageWithLines): string => `[${e[0]}, ${e[1]}, \`${e[2]}\`]`;
+  const messages = `\n  messages: [\n    ${generateReadable(eNode, options, evaluateVar, ifConditionTest).map(formatMessage).join(',\n    ')}\n  ],`;
 
   const assembled = ifConditionTestString + evaluateVarString + nodeCode + messages + range + loc + '\n';
 
@@ -318,6 +330,10 @@ export interface Options {
   spyFcName?: string;
   spyParamHook?: (e: EsprimaNode) => string;
   range?: boolean;
+
+  /**
+   * Will just remove loc in return SpyParams. Not in the message itself.
+   */
   loc?: boolean;
   classNames?: {
     value?: string;
@@ -348,7 +364,7 @@ export function insertSpies(
   // but loc is not needed for inserting spies
   const r = esprima.parseScript(code, {
     "range": true, // range will serve as id
-    "loc": options.loc,
+    "loc": true, // needed for messages.
   });
 
   // copy as to not modify original

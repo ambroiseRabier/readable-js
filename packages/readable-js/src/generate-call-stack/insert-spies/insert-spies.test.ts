@@ -16,10 +16,15 @@ const helpfulTestOptions: Options = {
 const pFormat = (code: string) => prettier.format(code, {parser: 'babel'});
 
 // prettier is not perfect for that purpose, it does preserve some spacing
-const expectCodeToSpies = (code: string, beEqualTo: string) => {
+const expectCodeToSpies = (code: string, beEqualTo: string, onlySpies?: boolean) => {
   try {
     expect(
-      pFormat(insertSpies(code, helpfulTestOptions))
+      pFormat(
+        insertSpies(code, onlySpies ?
+          {...helpfulTestOptions, spyParamHook: e => ''}
+          : helpfulTestOptions
+        )
+      )
     ).toEqual(
       pFormat(beEqualTo)
     );
@@ -47,13 +52,12 @@ describe('options', () => {
     const e =
       `var i = 0;
 ;spy({
-  
   evaluateVar: {
     i: i,
   },
   nodeCode: \`var i = 0;\`,
-  message: [
-    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
+  messages: [
+    [1, 1, \`Create the variable <span class="readable-variable">i</span> and set it to <span class="readable-value">\${i}</span>\`]
   ],
   range: [0, 10],
   loc: {
@@ -92,16 +96,14 @@ describe('options', () => {
     const e =
       `var i = 0;
 ;spy({
-  
   evaluateVar: {
     i: i,
   },
   nodeCode: \`var i = 0;\`,
-  message: [
-    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
+  messages: [
+    [1, 1, \`Create the variable <span class="readable-variable">i</span> and set it to <span class="readable-value">\${i}</span>\`]
   ],
   range: [0, 10],
-  
 });
 `;
     expect(r).toEqual(e);
@@ -109,31 +111,7 @@ describe('options', () => {
 
   it('can remove range', function () {
     const r = insertSpies(`var i = 0;`, {range: false});
-    const e =
-      `var i = 0;
-;spy({
-  
-  evaluateVar: {
-    i: i,
-  },
-  nodeCode: \`var i = 0;\`,
-  message: [
-    \`Create the variable <span class='readable-variable'>i</span> and set it to <span class='readable-value'>\${i}</span>\`
-  ],
-  
-  loc: {
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "end": {
-      "line": 1,
-      "column": 10
-    }
-  },
-});
-`;
-    expect(r).toEqual(e);
+    expect(r).not.toContain('range');
   });
 
   it('can change class names', function () {
@@ -181,22 +159,33 @@ it('insert multiple spy', function () {
 
 describe('variable', () => {
   it('multiple declarations: var i = 0, j = 1;', function () {
-    expectCodeToSpies(`var i = 0, j = 1;`, `
-      var i = 0, j = 1;
-      ;spy({
-        
-        evaluateVar: {
-          i: i,
-          j: j,
-        },
-        nodeCode: \`var i = 0, j = 1;\`,
-        message: [
-          \`Create the variable <span class='var'>i</span> and set it to <span class='val'>\${i}</span>\`,
-          \`Create the variable <span class='var'>j</span> and set it to <span class='val'>\${j}</span>\`
-        ],
-        
-        
-      });
+    // on a different line
+    expectCodeToSpies(`var i = 0, 
+    j = 1;`,
+      // language=js
+      `
+        var i = 0,
+          j = 1;
+        spy({
+          evaluateVar: {
+            i: i,
+            j: j,
+          },
+          nodeCode: \`var i = 0, 
+    j = 1;\`,
+          messages: [
+            [
+              1,
+              1,
+              \`Create the variable <span class="var">i</span> and set it to <span class="val">\${i}</span>\`,
+            ],
+            [
+              2,
+              2,
+              \`Create the variable <span class="var">j</span> and set it to <span class="val">\${j}</span>\`,
+            ],
+          ],
+        });
     `);
   });
 });
@@ -207,13 +196,17 @@ describe('ExpressionStatement', () => {
   it('increment: i++; UpdateExpression', function () {
     expectCodeToSpies(`i++;`, `
       i++;
-      ;spy({
+      spy({
         evaluateVar: {
           i: i,
         },
         nodeCode: \`i++;\`,
-        message: [
-          \`Increment <span class="var">i</span> by <span class="val">1</span>\`
+        messages: [
+          [
+            1,
+            1,
+            \`Increment <span class="var">i</span> by <span class="val">1</span>\`,
+          ],
         ],
       });
     `);
@@ -226,9 +219,13 @@ describe('ExpressionStatement', () => {
           i: i,
         },
         nodeCode: \`i+=1;\`,
-        message: [
-          \`add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
-        ],
+          messages: [
+            [
+              1,
+              1,
+              \`add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
+            ]
+          ]
       });
     `);
   });
@@ -236,17 +233,14 @@ describe('ExpressionStatement', () => {
   it('i = i + 1 AssignmentExpression', function () {
     expectCodeToSpies(`i = i + 1`, `
       i = i + 1;
-      ;spy({
-        
+      spy({
         evaluateVar: {
           i: i,
         },
-        nodeCode: "i = i + 1;",
-        message: [
-          \`add add <span class='val'>1</span> to <span class='var'>i</span> and set <span class='var'>i</span> to <span class='val'>\${i}</span>\`
-        ],
-        
-        
+        nodeCode: \`i = i + 1\`,
+        messages: [
+          [1, 1, \`set <span class="var">i</span> to <span class="val">\${i}</span>\`]
+        ]
       });
     `);
   });
@@ -255,8 +249,11 @@ describe('ExpressionStatement', () => {
     expectCodeToSpies(`i;`, `
       i;
       spy({
+        evaluateVar: {
+          i: i,
+        },
         nodeCode: \`i;\`,
-        message: [\`\`],
+        messages: [[1, 1, \`\`]],
       });
     `);
   });
@@ -286,26 +283,18 @@ if (true) {
       // language=js
       `
         if (true) {
-          ;spy({
+          spy({
             ifConditionTest: true,
-            
             nodeCode: \`if (true) {
 }\`,
-            message: [
-              \`Because\`
-            ],
+            messages: [[2, 2, \`Because\`]],
           });
-
         } else {
-
-          ;spy({
+          spy({
             ifConditionTest: false,
-            
             nodeCode: \`if (true) {
 }\`,
-            message: [
-              \`Skip because\`
-            ],
+            messages: [[2, 2, \`Skip because\`]],
           });
         }
       `);
@@ -321,27 +310,20 @@ if (true) {
       // language=js
       `
         if (true) {
-          ;spy({
+          spy({
             ifConditionTest: true,
-            
             nodeCode: \`if (true) {
 } else {
 }\`,
-            message: [
-              \`Because\`
-            ],
+            messages: [[2, 2, \`Because\`]],
           });
-
         } else {
-          ;spy({
+          spy({
             ifConditionTest: false,
-            
             nodeCode: \`if (true) {
 } else {
 }\`,
-            message: [
-              \`Skip because\`
-            ],
+            messages: [[2, 2, \`Skip because\`]],
           });
         }
 
@@ -363,40 +345,36 @@ if (true) {
         if (true) {
           spy({
             ifConditionTest: true,
-
             nodeCode: \`if (true) {
           if (true) {
           }
         }\`,
-            message: [\`Because\`],
+            messages: [[2, 2, \`Because\`]],
           });
-
+          
           if (true) {
             spy({
               ifConditionTest: true,
-
               nodeCode: \`if (true) {
           }\`,
-              message: [\`Because\`],
+              messages: [[3, 3, \`Because\`]],
             });
           } else {
             spy({
               ifConditionTest: false,
-
               nodeCode: \`if (true) {
           }\`,
-              message: [\`Skip because\`],
+              messages: [[3, 3, \`Skip because\`]],
             });
           }
         } else {
           spy({
             ifConditionTest: false,
-
             nodeCode: \`if (true) {
           if (true) {
           }
         }\`,
-            message: [\`Skip because\`],
+            messages: [[2, 2, \`Skip because\`]],
           });
         }
       `
@@ -410,7 +388,6 @@ describe('function', () => {
   it('function declaration and call', function () {
     expectCodeToSpies(
       // language=js
-
       `
       e();
       
@@ -424,7 +401,7 @@ describe('function', () => {
           e: e,
         },
         nodeCode:\`e();\`,
-        message: [\`Call function e\`],
+        messages: [[2, 2, \`Call function e\`]],
       });
       e();
       
@@ -442,17 +419,9 @@ describe('function', () => {
       `
       function e() {
         var i = 0;
-        spy({
-          evaluateVar: {
-            i: i,
-          },
-          nodeCode: \`var i = 0;\`,
-          message: [
-            \`Create the variable <span class='var'>i</span> and set it to <span class='val'>\${i}</span>\`,
-          ],
-        });
+        spy();
       }
-    `);
+    `, true);
   });
 
 
