@@ -259,13 +259,10 @@ describe('ExpressionStatement', () => {
   });
 
   it('1+1; ExpressionStatement', function () {
-    expectCodeToSpies(`1+1;`, `
-      1+1;
-      ;spy({
-        nodeCode: "1+1;",
-        message: [
-          \`\`
-        ],
+    expectCodeToSpies(`1+1;`, `1 + 1;
+      spy({
+        nodeCode: \`1+1;\`,
+        messages: [[1, 1, \`\`]],
       });
     `);
   });

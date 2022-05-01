@@ -11,7 +11,7 @@ import {
   Super,
   FunctionExpression,
   Literal,
-  BlockStatement
+  BlockStatement, AssignmentExpression, UpdateExpression
 } from 'estree';
 import {ENode, ExpressionWithProperty} from './estree-helper';
 
@@ -55,6 +55,12 @@ export const is = {
   },
   "FunctionExpression": (a: any): a is FunctionExpression => {
     return a.type === "FunctionExpression";
+  },
+  "AssignmentExpression": (a: any): a is AssignmentExpression => {
+    return a.type === "AssignmentExpression";
+  },
+  "UpdateExpression": (a: any): a is UpdateExpression => {
+    return a.type === "UpdateExpression";
   },
 };
 

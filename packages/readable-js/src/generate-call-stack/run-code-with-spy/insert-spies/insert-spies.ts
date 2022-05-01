@@ -1,7 +1,7 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 import {
-  AssignmentExpression,
+  AssignmentExpression, BinaryExpression, CallExpression,
   Expression,
   ExpressionStatement,
   FunctionDeclaration,
@@ -16,6 +16,7 @@ import {is} from '../../../enode-type-check';
 import {EsprimaNode} from '../../../estree-helper';
 import {generateReadable, MessageWithLines} from './generate-readable/generate-readable';
 import {SPY_FC_NAME} from '../run-code-with-spy';
+import {createSpyString} from './create-spy-string/create-spy-string';
 
 
 interface HasRange {
@@ -51,45 +52,6 @@ export interface DefaultSpyParams {
   messages: MessageWithLines[];
 }
 
-// note: the node code could be found ulteriorly using range, but I find it more user friendly this way.
-function createSpyString (
-  originalCode: string,
-  eNode: EsprimaNode,
-  options: Required<Options>,
-  evaluateVar?: string[],
-  ifConditionTest?: boolean, // this do not take in account if elseif else
-): string {
-  const [start, end] = eNode.range!;
-
-  const evaluateVarString = !evaluateVar ? '' : `\n  evaluateVar: {\n    ${evaluateVar.map(varName => `${varName}: ${varName}`).join(',\n    ')},\n  },`;
-  const ifConditionTestString = ifConditionTest === undefined ? '' : `\n  ifConditionTest: ${ifConditionTest},`;
-  const nodeCode = unescape(`\n  nodeCode: %60${originalCode.substring(eNode.range![0], eNode.range![1])}%60,`); // %60 == `
-  const range = !options.range ? '' : `\n  range: [${start}, ${end}],`;
-  const loc = !options.loc ? '' : `\n  loc: {
-    "start": {
-      "line": ${eNode.loc!.start.line},
-      "column": ${eNode.loc!.start.column}
-    },
-    "end": {
-      "line": ${eNode.loc!.end.line},
-      "column": ${eNode.loc!.end.column}
-    }
-  },`;
-  const formatMessage = (e: MessageWithLines): string => `[${e[0]}, ${e[1]}, \`${e[2]}\`]`;
-  const messages = `\n  messages: [\n    ${generateReadable(eNode, options, evaluateVar, ifConditionTest).map(formatMessage).join(',\n    ')}\n  ],`;
-
-  const assembled = ifConditionTestString + evaluateVarString + nodeCode + messages + range + loc + '\n';
-
-  const spyFirstParam = options.spyParamHook ? options.spyParamHook(eNode) : `{${assembled}}`;
-
-  // Give extra line return to make is readable
-  // Give extra semi-colon, in case there is an expression without semi-colon before.
-  const spyString = `
-;${options.spyFcName}(${spyFirstParam});
-`;
-
-  return spyString;
-}
 
 function insertSpy ({code, index, offset, spyString}: {
   code: string,
@@ -166,56 +128,41 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
 
     // can be i++; or i+=1 or 1+1 or c()
     ["ExpressionStatement", (e: ExpressionStatement) => {
+      let evaluateVar;
+      let index;
+
+      // s();
       if (is.CallExpression(e.expression)) {
-        const fcName = escodegen.generate(e.expression.callee);
-
-        const spyString = createSpyString(originalCode, e, options, [fcName]);
-        insertedCodeLength.push(spyString.length);
-
-        newCode = insertSpy({
-          code: newCode,
-          index: e.range![0], // insert before the call
-          offset,
-          spyString,
-        });
-
-        return;
+        evaluateVar = [escodegen.generate(e.expression.callee)];
+        index = e.range![0]; // insert before call
       }
 
-      const getIdentifierName = new Map<Expression["type"], any>([
-        // i++;
-        ['UpdateExpression', (exp: UpdateExpression) => (getIdentifierName.get(exp.argument.type) ?? (() => ''))(exp.argument)],
-
-        // i+=1;
-        ['AssignmentExpression', (exp: AssignmentExpression) => escodegen.generate(exp.left)],
-
-        // i;
-        ['Identifier', (exp: Identifier) => exp.name],
-
-        // s();
-        // too different...
-        //['CallExpression', (exp: CallExpression) => escodegen.generate(exp.callee)]
-      ]);
-
-      const getName = getIdentifierName.get(e.expression.type);
-
-
-      if (getName) {
-        const name = getName(e.expression);
-
-        const spyString = createSpyString(originalCode, e, options, [name]);
-        insertedCodeLength.push(spyString.length);
-
-        newCode = insertSpy({
-          code: newCode,
-          index: e.range![1],
-          offset,
-          spyString,
-        });
-
-      } else {
-        // do nothing, unsupported expression.
+      // i+=1;
+      else if (is.AssignmentExpression(e.expression)) {
+        evaluateVar = [escodegen.generate(e.expression.left)];
+        index = e.range![1];
       }
+
+      // i++;
+      else if (is.UpdateExpression(e.expression) && is.Identifier(e.expression.argument)) {
+        evaluateVar = [e.expression.argument.name];
+        index = e.range![1];
+      }
+
+      else {
+        console.warn(`No spy put because unsupported ExpressionStatement node: ${eNode.type} and ${e.type}, range: ${JSON.stringify(eNode.range)}`);
+      }
+
+
+      const spyString = createSpyString(originalCode, e, options, evaluateVar);
+      insertedCodeLength.push(spyString.length);
+
+      newCode = insertSpy({
+        code: newCode,
+        index:index,
+        offset,
+        spyString,
+      });
 
     }],
 

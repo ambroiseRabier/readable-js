@@ -1,18 +1,20 @@
 import {
-  Expression,
-  VariableDeclarator,
-  CallExpression,
   AssignmentExpression,
+  AssignmentOperator,
   BinaryExpression,
-  ObjectExpression,
+  BinaryOperator,
+  CallExpression,
+  Expression,
+  FunctionExpression,
   Identifier,
-  MemberExpression, MetaProperty, PrivateIdentifier,
   Literal,
+  MemberExpression,
+  ObjectExpression,
   Pattern,
-  FunctionExpression, AssignmentOperator, BinaryOperator
+  PrivateIdentifier,
+  VariableDeclarator
 } from 'estree';
 import {is} from './enode-type-check';
-import {ExpressionWithProperty} from './estree-helper';
 
 
 export interface ParseNodeOptions {
