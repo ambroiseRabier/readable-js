@@ -5,10 +5,10 @@ import {generateCallStack} from '@readable-js/core';
 import {RangeSetBuilder} from "@codemirror/state"
 import {DefaultSpyParams} from '@readable-js/core/dist/generate-call-stack/run-code-with-spy/insert-spies/insert-spies';
 
-export function readableMessages(view: EditorView, getCallStack: () => DefaultSpyParams[], currentStep?: number) {
+export function readableMessages(view: EditorView, getCallStack: (view: EditorView, skipEvaluation?: boolean) => DefaultSpyParams[], currentStep?: number, skipEvaluation?: boolean) {
   let widgets = []
 
-  let calls: DefaultSpyParams[] = getCallStack();
+  let calls: DefaultSpyParams[] = getCallStack(view, skipEvaluation);
 
   // one call at time, we don't display all of them, because their can be multiple calls
   // for the same line
