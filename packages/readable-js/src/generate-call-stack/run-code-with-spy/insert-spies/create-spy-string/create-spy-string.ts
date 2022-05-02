@@ -1,7 +1,7 @@
 
 // note: the node code could be found ulteriorly using range, but I find it more user friendly this way.
 import {EsprimaNode} from '../../../../estree-helper';
-import {generateReadable, MessageWithLines} from '../generate-readable/generate-readable';
+import {generateReadable, MessageWithLines} from './generate-readable/generate-readable';
 import {Options} from '../insert-spies';
 
 export function createSpyString (

@@ -1,20 +1,18 @@
 import * as esprima from 'esprima';
 import * as escodegen from 'escodegen';
 import {
-  AssignmentExpression, BinaryExpression, CallExpression,
-  Expression,
   ExpressionStatement,
+  ForStatement,
   FunctionDeclaration,
-  Identifier,
   IfStatement,
   Pattern,
   SourceLocation,
-  UpdateExpression,
-  VariableDeclaration
+  VariableDeclaration,
+  WhileStatement
 } from 'estree';
 import {is} from '../../../enode-type-check';
 import {EsprimaNode} from '../../../estree-helper';
-import {generateReadable, MessageWithLines} from './generate-readable/generate-readable';
+import {MessageWithLines} from './create-spy-string/generate-readable/generate-readable';
 import {SPY_FC_NAME} from '../run-code-with-spy';
 import {createSpyString} from './create-spy-string/create-spy-string';
 
@@ -94,7 +92,11 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
       // you don't with a single if, unless you analyze what has been called previously
       // to avoid such bothersome extra work, just add an else.
       const spyStringClosing = createSpyString(originalCode, e, options, undefined, false);
-      insertedCodeLength.push(spyStringClosing.length);
+
+      // we are going to need the new offset only if there was anything in the else from start.
+      if (e.alternate) {
+        insertedCodeLength.push(spyStringOpening.length + spyStringClosing.length);
+      }
 
       // add spy right after closing curvy bracket
       newCode = insertSpy({
@@ -128,8 +130,8 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
 
     // can be i++; or i+=1 or 1+1 or c()
     ["ExpressionStatement", (e: ExpressionStatement) => {
-      let evaluateVar;
-      let index;
+      let evaluateVar; // nothing as default
+      let index = e.range![1]; // by default after
 
       // s();
       if (is.CallExpression(e.expression)) {
@@ -159,7 +161,7 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
 
       newCode = insertSpy({
         code: newCode,
-        index:index,
+        index: index,
         offset,
         spyString,
       });
@@ -171,7 +173,79 @@ function insertSpyCodeBefore({originalCode, newCode, eNode, offset, options}: {
       // would be nice to show it, but I have an issue with the offset.
       // It would need to be at the top of the stack, telling us every function declaration.
       insertedCodeLength.push(0);
-    }]
+    }],
+
+    ["WhileStatement", (e: WhileStatement) => {
+      const spyString = createSpyString(originalCode, e, options, undefined, true);
+      insertedCodeLength.push(spyString.length);
+
+      newCode = insertSpy({
+        code: newCode,
+        index: e.body.range![0] + 1, // right after opening curvy bracket
+        offset,
+        spyString,
+      });
+
+      // exit of while loop
+      const spyStringExit = createSpyString(originalCode, e, options, undefined, false);
+
+      newCode = insertSpy({
+        code: newCode,
+        index: e.range![1], // right after closing curvy bracket
+        offset: offset + spyString.length,
+        spyString: spyStringExit,
+      });
+    }],
+
+    ['ForStatement', (e: ForStatement) => {
+
+      const spyString = createSpyString(originalCode, e, options, undefined, true);
+      insertedCodeLength.push(spyString.length); // update length only because it is before children statements
+
+      newCode = insertSpy({
+        code: newCode,
+        index: e.body.range![0] + 1, // right after opening curvy bracket
+        offset,
+        spyString,
+      });
+
+      let updateLength = 0;
+
+      // for loop, not always have the update, like i++
+      if (!!e.update) {
+        const fakeNode: ExpressionStatement = {type: 'ExpressionStatement', expression: e.update, loc: e.update.loc, range: e.update.range};
+        let evaluateVar;
+
+        // i+=1
+        if (is.AssignmentExpression(e.update)) {
+          evaluateVar = [escodegen.generate(e.update.left)];
+        }
+        // i++;
+        else if (is.UpdateExpression(e.update) && is.Identifier(e.update.argument)) {
+          evaluateVar = [e.update.argument.name];
+        }
+
+        const updateSpyString = createSpyString(originalCode, fakeNode, options, evaluateVar);
+        updateLength = updateSpyString.length;
+
+        newCode = insertSpy({
+          code: newCode,
+          index: e.body.range![1] - 1, // right before closing curvy bracket
+          offset: offset + spyString.length,
+          spyString: updateSpyString,
+        });
+      }
+
+      // exit of for loop
+      const spyStringExit = createSpyString(originalCode, e, options, undefined, false);
+
+      newCode = insertSpy({
+        code: newCode,
+        index: e.range![1], // right after closing curvy bracket
+        offset: offset + spyString.length + updateLength,
+        spyString: spyStringExit,
+      });
+    }],
 
   ]);
 
@@ -259,6 +333,24 @@ function getChildStatements(eNode: EsprimaNode): EsprimaNode[][] {
 
     ["FunctionDeclaration", (next: FunctionDeclaration) => {
       return [next.body.body];
+    }],
+
+    ["WhileStatement", (next: WhileStatement) => {
+      if (!is.BlockStatement(next.body)) {
+        // skip for now
+        return [[]];
+      } else {
+        return [next.body.body];
+      }
+    }],
+
+    ["ForStatement", (next: ForStatement) => {
+      if (!is.BlockStatement(next.body)) {
+        // skip for now
+        return [[]];
+      } else {
+        return [next.body.body];
+      }
     }],
 
 
@@ -357,24 +449,24 @@ export function insertSpies(
 
     // get more elements here and add them to stack.
     stack.push(
-      ...getChildStatements(last).map(
-        block => block.map((e, i) => {
+      ...(getChildStatements(last).map(
+        (block, blockIndex) => block.map((e) => {
           // It should have loc and range because we called parseScript with correct params.
           if (!isHasRange(e)) {
             console.log(e);
-            throw new Error(`Have you called esprima.parseScript without range and loc param ?`);
+            throw new Error(`Have you called esprima.parseScript without range param ?`);
           }
 
           return {
             // Add offset of parent stack: example, a if get a spy, that is put before the block statement of the if.
             // why is insertedCodeLength an array ?
             // --> example, in a if...else, insertedCodeLength[0] is offset of if, and insertedCodeLength[1] for else
-            offset: offset + insertedCodeLength[i],
+            offset: offset + insertedCodeLength[blockIndex],
 
             last: e,
           };
         })
-      ).flat()
+      )).flat()
     );
   }
 

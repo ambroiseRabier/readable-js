@@ -1,4 +1,3 @@
-import {ReadableJS} from '../src';
 import * as esprima from 'esprima';
 import {Directive, ModuleDeclaration, Statement} from 'estree';
 

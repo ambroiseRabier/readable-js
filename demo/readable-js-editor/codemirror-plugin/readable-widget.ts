@@ -17,8 +17,4 @@ export class ReadableWidget extends WidgetType {
 
     return wrap;
   }
-
-  ignoreEvent() {
-    return false;
-  }
 }

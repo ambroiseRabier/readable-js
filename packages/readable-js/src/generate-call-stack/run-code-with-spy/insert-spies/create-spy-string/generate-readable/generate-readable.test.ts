@@ -1,5 +1,5 @@
 import {generateReadable} from './generate-readable';
-import {Options} from '../insert-spies';
+import {Options} from '../../insert-spies';
 
 it('return string prepared to become template string', function () {
   const eNode = {

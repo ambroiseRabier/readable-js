@@ -1,9 +1,10 @@
 import {ViewUpdate, ViewPlugin, DecorationSet} from "@codemirror/view"
 import {EditorView} from '@codemirror/basic-setup';
 import {readableMessages} from './readableMessages';
+import {DefaultSpyParams} from '@readable-js/core/dist/generate-call-stack/run-code-with-spy/insert-spies/insert-spies';
 
 
-export const readablePlugin = (getCallStack: () => any, currentStep?: number) => {
+export const readablePlugin = (getCallStack: () => DefaultSpyParams[], currentStep?: number) => {
   return ViewPlugin.fromClass(class {
     decorations: DecorationSet;
 
@@ -12,7 +13,8 @@ export const readablePlugin = (getCallStack: () => any, currentStep?: number) =>
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged){
+      console.log('readablePlugin');
+      if (update.docChanged){
         this.decorations = readableMessages(update.view, getCallStack, currentStep);
       }
     }

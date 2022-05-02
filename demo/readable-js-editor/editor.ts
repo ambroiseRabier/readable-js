@@ -2,10 +2,11 @@ import {EditorState, EditorView, basicSetup} from "@codemirror/basic-setup";
 import {javascript} from "@codemirror/lang-javascript";
 
 // with workspaces, this import will use our local package ! (dist folder)
-import {ReadableJS, generateCallStack} from "@readable-js/core";
+import {generateCallStack} from "@readable-js/core";
 import {readablePlugin} from './codemirror-plugin/readable-plugin';
 import {ViewUpdate, } from '@codemirror/view';
 import {Extension, Compartment} from "@codemirror/state"
+import {DefaultSpyParams} from '@readable-js/core';
 
 
 const $range: HTMLInputElement = document.querySelector('#myRange');
@@ -13,11 +14,10 @@ const $minValue: HTMLSpanElement = document.querySelector('.slide-container .min
 const $maxValue: HTMLSpanElement = document.querySelector('.slide-container .max-value');
 const $currentValue: HTMLSpanElement = document.querySelector('.slide-container .current-value');
 
-const one = readablePlugin(() => callStack, 0);
+const one = readablePlugin(() => generated.calls, 0);
 const j = new Compartment()
 const k = j.of([one])
 
-let callStack = [];
 
 const initialCode = `var i = 0;
 i++;
@@ -27,41 +27,66 @@ function b () {
 }
 b
   ();
-  i++;`;
-
-let error = false;
-
-try {
-  callStack = generateCallStack(initialCode).calls as any;
-} catch (e) {
-  // Syntax errors not yet handled
-  console.warn(e);
-  error = true;
+  i++;
+  
+for (let i = 0; i < 2; i++) {
+ 1 + 1;
 }
 
-if (!error) {
-  updateSlider(callStack.length);
+let j = 2;
+while(j > 0) {
+ j -= 1;
 }
+
+
+
+if (j == 0) {
+ j += 1;
+}
+
+if (j == 0) {
+ j += 1;
+} else {
+  2 + 2;
+}
+`;
+
+let generated: { calls: DefaultSpyParams[]; error: any; };
+
+// EditorView.updateListener not called at start up, so we call it there instead.
+updateGenerated(initialCode);
+
+function updateGenerated (code: string) {
+  generated = generateCallStack(code);
+
+  if (!generated.error) {
+    updateSlider(generated.calls.length);
+  } else {
+    console.warn(generated.error);
+  }
+}
+
+function getUpdatedCallStack(view: EditorView) {
+
+}
+
 
 let editor = new EditorView({
   state: EditorState.create({
     extensions: [
-      k,
       basicSetup,
       javascript(),
 
-      // need to call this code at startup
-      // seem to be called before the plugin, all good ?
+      // call it before the plugin, so that callstack is up to date.
       EditorView.updateListener.of((v: ViewUpdate) => {
+        console.log('updateListener');
+        console.log(v);
         if (v.docChanged) {
-          const s = stateToCallStack(v.state);
-          callStack = s.calls;
-
-          if (!s.error) {
-            updateSlider(callStack.length);
-          }
+          updateGenerated(stateToCode(v.state));
         }
       }),
+      k,
+
     ],
     doc: initialCode
   }),
@@ -77,7 +102,7 @@ $range.addEventListener('input', (e: any) => {
 
   // The only way to tell the plugin to update, because external data has changed ?
   editor.dispatch({
-    effects: j.reconfigure([readablePlugin(() => callStack, e.target.value)])
+    effects: j.reconfigure([readablePlugin(() => generated.calls, e.target.value)])
   });
 });
 
@@ -90,33 +115,9 @@ function updateSlider(length: number) {
   $currentValue.innerText = (Math.min(parseInt($range.value), length-1) + 1) + '';
 }
 
-const stateToCallStack = (state: EditorState) => {
+function stateToCode (state: EditorState): string {
   // that won't be performant on large files, but that is not the purpose of readable-js
-  const code = Array.from(
+  return Array.from(
     state.doc.iterLines(1, state.doc.lines+1)
   ).join('\n');
-
-  console.log(code);
-
-  let calls: {
-    loc: any; // SourceLocation
-    range: [number, number];
-    message: string;
-  }[];
-
-  let error = false;
-
-  try {
-    calls = generateCallStack(code).calls as any;
-  } catch (e) {
-    // Syntax errors not yet handled
-    console.warn(e);
-    error = true;
-  }
-
-  return {
-    error: error,
-    calls: calls ?? [],
-  };
-};
-
+}

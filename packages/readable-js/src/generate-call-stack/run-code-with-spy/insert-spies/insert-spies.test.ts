@@ -17,32 +17,38 @@ const pFormat = (code: string) => prettier.format(code, {parser: 'babel'});
 
 // prettier is not perfect for that purpose, it does preserve some spacing
 const expectCodeToSpies = (code: string, beEqualTo: string, onlySpies?: boolean) => {
+  const codeAsStr: string = insertSpies(code, onlySpies ?
+    {...helpfulTestOptions, spyParamHook: e => ''}
+    : helpfulTestOptions
+  );
+
+  let formatGenerated;
+  let formatExpected;
+
   try {
-    expect(
-      pFormat(
-        insertSpies(code, onlySpies ?
-          {...helpfulTestOptions, spyParamHook: e => ''}
-          : helpfulTestOptions
-        )
-      )
-    ).toEqual(
-      pFormat(beEqualTo)
-    );
+    formatGenerated = pFormat(codeAsStr);
   } catch (e) {
-    // try to catch formatting error, hard to debug with what prettier give us.
-    if (typeof e == 'string' && e.includes('Error')) {
-      console.warn("format didn't work");
-      console.warn(e);
-      expect(
-        insertSpies(code, helpfulTestOptions)
-      ).toEqual(
-        "Error: Formatting issue, probably invalid code somewhere.\n\n" + beEqualTo
-      );
-    } else {
-      // else leave the error as it is.
-      throw e;
-    }
+    console.warn("format didn't work, invalid code in generated code.");
+
+    // much easier to look at with webstorm compare than an error !
+    expect(
+      codeAsStr
+    ).toEqual(
+      beEqualTo
+    );
   }
+
+  try {
+    formatExpected = pFormat(beEqualTo);
+  } catch (e) {
+    throw new Error('Incorrect code in expected code.');
+  }
+
+  expect(
+    formatGenerated
+  ).toEqual(
+    formatExpected
+  );
 };
 
 
@@ -223,7 +229,7 @@ describe('ExpressionStatement', () => {
             [
               1,
               1,
-              \`add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
+              \`Add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
             ]
           ]
       });
@@ -239,19 +245,15 @@ describe('ExpressionStatement', () => {
         },
         nodeCode: \`i = i + 1\`,
         messages: [
-          [1, 1, \`set <span class="var">i</span> to <span class="val">\${i}</span>\`]
+          [1, 1, \`Set <span class="var">i</span> to <span class="val">\${i}</span>\`]
         ]
       });
     `);
   });
 
   it('i Identifier', function () {
-    expectCodeToSpies(`i;`, `
-      i;
+    expectCodeToSpies(`i;`, `i;
       spy({
-        evaluateVar: {
-          i: i,
-        },
         nodeCode: \`i;\`,
         messages: [[1, 1, \`\`]],
       });
@@ -284,14 +286,14 @@ if (true) {
             ifConditionTest: true,
             nodeCode: \`if (true) {
 }\`,
-            messages: [[2, 2, \`Because\`]],
+            messages: [[2, 2, \`Because ... evaluate to true\`]],
           });
         } else {
           spy({
             ifConditionTest: false,
             nodeCode: \`if (true) {
 }\`,
-            messages: [[2, 2, \`Skip because\`]],
+            messages: [[2, 2, \`Skip because ... evaluate to false\`]],
           });
         }
       `);
@@ -312,7 +314,7 @@ if (true) {
             nodeCode: \`if (true) {
 } else {
 }\`,
-            messages: [[2, 2, \`Because\`]],
+            messages: [[2, 2, \`Because ... evaluate to true\`]],
           });
         } else {
           spy({
@@ -320,7 +322,7 @@ if (true) {
             nodeCode: \`if (true) {
 } else {
 }\`,
-            messages: [[2, 2, \`Skip because\`]],
+            messages: [[2, 2, \`Skip because ... evaluate to false\`]],
           });
         }
 
@@ -346,7 +348,7 @@ if (true) {
           if (true) {
           }
         }\`,
-            messages: [[2, 2, \`Because\`]],
+            messages: [[2, 2, \`Because ... evaluate to true\`]],
           });
           
           if (true) {
@@ -354,14 +356,14 @@ if (true) {
               ifConditionTest: true,
               nodeCode: \`if (true) {
           }\`,
-              messages: [[3, 3, \`Because\`]],
+              messages: [[3, 3, \`Because ... evaluate to true\`]],
             });
           } else {
             spy({
               ifConditionTest: false,
               nodeCode: \`if (true) {
           }\`,
-              messages: [[3, 3, \`Skip because\`]],
+              messages: [[3, 3, \`Skip because ... evaluate to false\`]],
             });
           }
         } else {
@@ -371,11 +373,150 @@ if (true) {
           if (true) {
           }
         }\`,
-            messages: [[2, 2, \`Skip because\`]],
+            messages: [[2, 2, \`Skip because ... evaluate to false\`]],
           });
         }
       `
     );
+  });
+
+  it('multiples instructions in if', function () {
+    expectCodeToSpies(`
+if (false) {
+  j += 1;
+  i--;
+}`,
+ // language=js
+      `if (false) {
+        spy({
+          ifConditionTest: true,
+          nodeCode: \`if (false) {
+  j += 1;
+  i--;
+}\`,
+          messages: [[2, 2, \`Because ... evaluate to true\`]],
+        });
+
+        j += 1;
+        spy({
+          evaluateVar: {
+            j: j,
+          },
+          nodeCode: \`j += 1;\`,
+          messages: [
+            [
+              3,
+              3,
+              \`Add <span class="exp">1</span> to <span class="var">j</span> and set <span class="var">j</span> to <span class="val">\${j}</span>\`,
+            ],
+          ],
+        });
+
+        i--;
+        spy({
+          evaluateVar: {
+            i: i,
+          },
+          nodeCode: \`i--;\`,
+          messages: [
+            [
+              4,
+              4,
+              \`Increment <span class="var">i</span> by <span class="val">1</span>\`,
+            ],
+          ],
+        });
+      } else {
+        spy({
+          ifConditionTest: false,
+          nodeCode: \`if (false) {
+  j += 1;
+  i--;
+}\`,
+          messages: [[2, 2, \`Skip because ... evaluate to false\`]],
+        });
+      }
+      `)
+  });
+
+  it('else with instructions ', function () {
+    expectCodeToSpies(`
+    var j = 0;
+    
+    if (j == 0) {
+      j += 1;
+    } else {
+      j++;
+    }
+    `,
+      // language=js
+      `var j = 0;
+      spy({
+        evaluateVar: {
+          j: j,
+        },
+        nodeCode: \`var j = 0;\`,
+        messages: [
+          [
+            2,
+            2,
+            \`Create the variable <span class="var">j</span> and set it to <span class="val">\${j}</span>\`,
+          ],
+        ],
+      });
+
+      if (j == 0) {
+        spy({
+          ifConditionTest: true,
+          nodeCode: \`if (j == 0) {
+      j += 1;
+    } else {
+      j++;
+    }\`,
+          messages: [[4, 4, \`Because ... evaluate to true\`]],
+        });
+
+        j += 1;
+        spy({
+          evaluateVar: {
+            j: j,
+          },
+          nodeCode: \`j += 1;\`,
+          messages: [
+            [
+              5,
+              5,
+              \`Add <span class="exp">1</span> to <span class="var">j</span> and set <span class="var">j</span> to <span class="val">\${j}</span>\`,
+            ],
+          ],
+        });
+      } else {
+        spy({
+          ifConditionTest: false,
+          nodeCode: \`if (j == 0) {
+      j += 1;
+    } else {
+      j++;
+    }\`,
+          messages: [[4, 4, \`Skip because ... evaluate to false\`]],
+        });
+
+        j++;
+        spy({
+          evaluateVar: {
+            j: j,
+          },
+          nodeCode: \`j++;\`,
+          messages: [
+            [
+              7,
+              7,
+              \`Increment <span class="var">j</span> by <span class="val">1</span>\`,
+            ],
+          ],
+        });
+      }
+      `)
   });
 
 
@@ -421,5 +562,121 @@ describe('function', () => {
     `, true);
   });
 
+});
 
+describe('loops', () => {
+
+  it('while', function () {
+    expectCodeToSpies(`
+      var i = 0;
+      while (i < 2) {
+        i += 1;
+      }
+    `,
+      // language=js
+      `var i = 0;
+      spy({
+        evaluateVar: {
+          i: i,
+        },
+        nodeCode: \`var i = 0;\`,
+        messages: [
+          [
+            2,
+            2,
+            \`Create the variable <span class="var">i</span> and set it to <span class="val">\${i}</span>\`,
+          ],
+        ],
+      });
+
+      while (i < 2) {
+        spy({
+          ifConditionTest: true,
+          nodeCode: \`while (i < 2) {
+        i += 1;
+      }\`,
+          messages: [
+            [3, 3, \`Because ...\`],
+            [5, 5, \`... and try again\`],
+          ],
+        });
+
+        i += 1;
+        spy({
+          evaluateVar: {
+            i: i,
+          },
+          nodeCode: \`i += 1;\`,
+          messages: [
+            [
+              4,
+              4,
+              \`Add <span class="exp">1</span> to <span class="var">i</span> and set <span class="var">i</span> to <span class="val">\${i}</span>\`,
+            ],
+          ],
+        });
+      }
+      spy({
+        ifConditionTest: false,
+        nodeCode: \`while (i < 2) {
+        i += 1;
+      }\`,
+        messages: [
+          [3, 3, \`Because ... is not\`],
+          [5, 5, \`... stop looping\`],
+        ],
+      });
+      `);
+  });
+
+  it('for', function () {
+    expectCodeToSpies(
+      `for (let i = 0; i < 2; i++) {
+        1+1;
+      }`,
+      // language=js
+      `for (let i = 0; i < 2; i++) {
+        spy({
+          ifConditionTest: true,
+          nodeCode: \`for (let i = 0; i < 2; i++) {
+        1+1;
+      }\`,
+          messages: [
+            [1, 1, \`Because ...\`],
+            [3, 3, \`... and try again\`],
+          ],
+        });
+
+        1 + 1;
+        spy({
+          nodeCode: \`1+1;\`,
+          messages: [[2, 2, \`\`]],
+        });
+
+        spy({
+          evaluateVar: {
+            i: i,
+          },
+          nodeCode: \`i++\`,
+          messages: [
+            [
+              1,
+              1,
+              \`Increment <span class="var">i</span> by <span class="val">1</span>\`,
+            ],
+          ],
+        });
+      }
+      spy({
+        ifConditionTest: false,
+        nodeCode: \`for (let i = 0; i < 2; i++) {
+        1+1;
+      }\`,
+        messages: [
+          [1, 1, \`Because ... is not\`],
+          [3, 3, \`... stop looping\`],
+        ],
+      });
+      `);
+  });
 });
