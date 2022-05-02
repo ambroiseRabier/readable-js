@@ -1,16 +1,35 @@
 {
   "name": "@readable-js/react-codemirror",
   "version": "0.1.0",
-  "description": "",
+  "description": "React component for ReadableJS",
   "main": "lib/exports.js",
   "types": "lib/exports.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ambroiseRabier/readable-js.git",
+    "directory": "packages/readable-js"
+  },
+  "bugs": {
+    "url": "https://github.com/ambroiseRabier/readable-js/issues"
+  },
+  "keywords": [
+    "react",
+    "learning",
+    "teaching",
+    "pedagogy"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-linux": "cp src/ReadableEditor.css lib/ReadableEditor.css&& tsc",
-    "build-win": "copy src\\ReadableEditor.css lib\\ReadableEditor.css&& tsc"
+    "build-win": "copy src\\ReadableEditor.css lib\\ReadableEditor.css&& tsc",
+    "publish": "npm publish",
+    "pack": "npm pack"
   },
   "peerDependencies": {
     "react": "^17.x",
@@ -22,7 +41,7 @@
     "@codemirror/autocomplete": "^0.20.0",
     "@codemirror/basic-setup": "^0.20.0",
     "@codemirror/lang-javascript": "^0.20.0",
-    "@readable-js/core": "file:../readable-js"
+    "@readable-js/core": "0.1.0"
   },
   "devDependencies": {
     "@types/react": "^17.0.2",

@@ -1,27 +1,35 @@
 {
   "name": "@readable-js/core",
   "version": "0.1.0",
-  "description": "",
+  "description": "ReadableJS is a toolkit for teachers to craft small demos that can be explored interactively.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "test": "jest --silent false",
-    "pack": "npm pack",
-    "build": "rmdir /s /Q .\\dist && tsc",
-    "build-linux": "rm -rf ./dist && tsc"
-  },
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "jest --silent false",
+    "build": "rmdir /s /Q .\\dist && tsc",
+    "build-linux": "rm -rf ./dist && tsc",
+    "publish": "npm publish",
+    "pack": "npm pack"
+  },
   "repository": {
     "type": "git",
-    "url": "",
+    "url": "git+https://github.com/ambroiseRabier/readable-js.git",
     "directory": "packages/readable-js"
+  },
+  "bugs": {
+    "url": "https://github.com/ambroiseRabier/readable-js/issues"
   },
   "keywords": [
     "typescript",
     "learning",
-    "teaching"
+    "teaching",
+    "pedagogy"
   ],
   "author": "Ambroise Rabier",
   "license": "ISC",

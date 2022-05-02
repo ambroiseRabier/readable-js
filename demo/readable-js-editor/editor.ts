@@ -9,7 +9,7 @@ import {Extension, Compartment} from "@codemirror/state"
 import {DefaultSpyParams} from '@readable-js/core';
 
 
-const $range: HTMLInputElement = document.querySelector('#myRange');
+const $range: HTMLInputElement = document.querySelector('.slide-container #myRange');
 const $minValue: HTMLSpanElement = document.querySelector('.slide-container .min-value');
 const $maxValue: HTMLSpanElement = document.querySelector('.slide-container .max-value');
 const $currentValue: HTMLSpanElement = document.querySelector('.slide-container .current-value');
