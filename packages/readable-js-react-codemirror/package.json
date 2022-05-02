@@ -26,8 +26,8 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-linux": "cp src/ReadableEditor.css lib/ReadableEditor.css&& tsc",
-    "build-win": "copy src\\ReadableEditor.css lib\\ReadableEditor.css&& tsc",
+    "build-linux": "tsc && cp src/ReadableEditor.css lib/ReadableEditor.css",
+    "build-win": "tsc && copy src\\ReadableEditor.css lib\\ReadableEditor.css",
     "publish": "npm publish",
     "pack": "npm pack"
   },
