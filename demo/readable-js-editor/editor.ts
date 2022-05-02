@@ -53,19 +53,6 @@ if (j == 0) {
 
 let generated: { calls: DefaultSpyParams[]; error: any; };
 
-// EditorView.updateListener not called at start up, so we call it there instead.
-// updateGenerated(initialCode);
-
-// function updateGenerated (code: string) {
-//   generated = generateCallStack(code);
-//
-//   if (!generated.error) {
-//     updateSlider(generated.calls.length);
-//   } else {
-//     console.warn(generated.error);
-//   }
-// }
-
 function getUpdatedCallStack(view: EditorView, skipEvaluation?: boolean): DefaultSpyParams[] {
   if (!skipEvaluation) {
     generated = generateCallStack(stateToCode(view.state));
@@ -86,17 +73,7 @@ let editor = new EditorView({
     extensions: [
       basicSetup,
       javascript(),
-
-      // call it before the plugin, so that callstack is up to date.
-      // EditorView.updateListener.of((v: ViewUpdate) => {
-      //   console.log('updateListener');
-      //   console.log(v);
-      //   if (v.docChanged) {
-      //     updateGenerated(stateToCode(v.state));
-      //   }
-      // }),
       k,
-
     ],
     doc: initialCode
   }),
@@ -108,8 +85,6 @@ let editor = new EditorView({
 });
 
 $range.addEventListener('input', (e: any) => {
-  // $currentValue.innerText = (parseInt(e.target.value)+1) + '';
-
   // The only way to tell the plugin to update, because external data has changed ?
   editor.dispatch({
     effects: j.reconfigure([readablePlugin(getUpdatedCallStack, e.target.value, true)])

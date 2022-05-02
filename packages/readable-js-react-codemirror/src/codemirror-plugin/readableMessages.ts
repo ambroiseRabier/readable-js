@@ -6,7 +6,7 @@ import {RangeSetBuilder} from "@codemirror/state"
 import {DefaultSpyParams} from '@readable-js/core/dist/generate-call-stack/run-code-with-spy/insert-spies/insert-spies';
 
 export function readableMessages(view: EditorView, getCallStack: (view: EditorView, skipEvaluation?: boolean) => DefaultSpyParams[], currentStep: number, skipEvaluation?: boolean) {
-  let widgets = []
+  let widgets: any[] = []
 
   let calls: DefaultSpyParams[] = getCallStack(view, skipEvaluation);
 

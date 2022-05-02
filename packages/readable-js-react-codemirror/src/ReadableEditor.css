@@ -1,0 +1,18 @@
+.cm-readable-js-highlight {
+  /* When cursor is on the line, there is cm-activeLine color, override it. */
+  background: #ff990042!important;
+}
+
+.cm-readable-js-message {
+  float: right; /* This will break on long line, no fix found right now. */
+  color: #6a6a6a;
+}
+
+.readable-value, .readable-variable {
+  color: #524040;
+  font-weight: bold;
+}
+
+#myRange {
+  width: 600px;
+}
